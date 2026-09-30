@@ -1,0 +1,12 @@
+name: dpcr-design
+channels: [conda-forge, bioconda]
+dependencies:
+  - python=3.11
+  - biopython
+  - pandas
+  - primer3-py
+  - mmseqs2
+  - blast
+  - seqkit
+  - jellyfish
+  - matplotlib

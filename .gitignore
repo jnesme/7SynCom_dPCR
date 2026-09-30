@@ -1,0 +1,11 @@
+# downloaded genome data (re-downloadable from NCBI, see genomes/assemblies.tsv)
+genomes/**/*.gz
+genomes/**/*_assembly_report.txt
+genomes/**/md5checksums.txt
+# intermediate files and job logs
+primer_design/work/
+primer_design/logs/
+# paper PDF
+*.pdf
+
+__pycache__/
