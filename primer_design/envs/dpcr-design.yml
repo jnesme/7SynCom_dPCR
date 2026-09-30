@@ -10,3 +10,4 @@ dependencies:
   - seqkit
   - jellyfish
   - matplotlib
+  - bowtie

@@ -45,6 +45,7 @@ for s in strains:
     chrom.close(); full.close()
 
     prot2cds = {}
+    n_before = len(cds_rows)
     for line in gzip.open(gff, "rt"):
         if line.startswith("#"):
             continue
@@ -68,8 +69,8 @@ for s in strains:
             prot2cds[locus] = row
     # write proteins keyed by strain|locus_tag (WP_ ids are non-redundant; paralogs may share one)
     seqs = {rec.id: str(rec.seq) for rec in SeqIO.parse(gzip.open(faa, "rt"), "fasta")}
-    for row in cds_rows:
-        if row["strain"] == tag and row["protein_id"] in seqs:
+    for row in cds_rows[n_before:]:
+        if row["protein_id"] in seqs:
             all_prot.write(f">{tag}|{row['locus_tag']}\n{seqs[row['protein_id']]}\n")
 all_prot.close(); all_genomes.close()
 

@@ -15,7 +15,7 @@ from Bio.SeqUtils import gc_fraction
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK = os.path.join(HERE, "..", "work")
-GENES_PER_STRAIN = 80      # top-ranked genes to design on per strain
+GENES_PER_GROUP = 40       # top-ranked genes per strain in each group (core / unique)
 SETS_PER_GENE = 3
 
 COND = dict(mv_conc=50.0, dv_conc=3.8, dntp_conc=0.8)
@@ -77,32 +77,50 @@ for f in os.listdir(WORK):
             chrom[(s, sid)] = str(rec.seq)
 genome_gc = {s: gc_fraction("".join(v for (ss, _), v in chrom.items() if ss == s)) for s in cand.strain.unique()}
 
-# rank genes: single-copy core genes (homology 1:1 or named 1x in all genomes) first,
-# then unique genes supported by both routes, homology only, text only;
-# then longer unique run and lower identity to the closest homolog in the other genomes
+# Absolute quantification: targets only on the replicon carrying dnaA (primary chromosome;
+# secondary chromosomes/chromids, e.g. in AA2, need not be 1:1 with it). dnaA ~ oriC.
+cds_all = pd.read_csv(os.path.join(WORK, "cds_table.tsv"), sep="\t")
+dnaa = cds_all[cds_all.gene == "dnaA"].drop_duplicates("strain").set_index("strain")
+cand = cand[cand.seqid == cand.strain.map(dnaa.seqid)].copy()
+# rel_ori: circular distance from dnaA, 0 = origin, 1 = terminus (ori/ter copy-number
+# gradient in growing cells); mid-replichore (0.3-0.7) is preferred for all 7 strains
+chrom_len = {k: len(v) for k, v in chrom.items()}
+mid = (cand.start + cand.end) / 2
+L = cand.apply(lambda r: chrom_len[(r.strain, r.seqid)], axis=1)
+dist = (mid - cand.strain.map(dnaa.start)).abs()
+cand["rel_ori"] = np.minimum(dist, L - dist) / (L / 2)
+cand["mid_replichore"] = cand.rel_ori.between(0.3, 0.7)
+
+
+# route classes. Strain-unique genes (no homolog in the other 6 genomes) give the widest
+# specificity margin; core single-copy genes rely on SNPs within the oligos. Both are
+# designed (quota per strain) and step 04/05 decide.
 def class_rank(r):
     c, t = r["class"] if isinstance(r["class"], str) else "", r.text_class if isinstance(r.text_class, str) else ""
-    if c == "B_universal_1to1" and t == "text_core_1x":
-        return 0
-    if c == "B_universal_1to1" or t == "text_core_1x":
-        return 1
     if c == "A_unique" and t == "text_unique":
+        return 0  # unique by both routes
+    if c == "B_universal_1to1" and t == "text_core_1x":
+        return 1  # core 1x by both routes
+    if c == "A_unique":
         return 2
-    return 3 if c == "A_unique" else 4
+    if c == "B_universal_1to1" or t == "text_core_1x":
+        return 3
+    return 4      # text_unique only (homology found a homolog elsewhere or a paralog)
 
 
 cand["class_rank"] = cand.apply(class_rank, axis=1)
-cand = cand.sort_values(["strain", "class_rank", "uniq_run_len", "best_other_pident"],
-                        ascending=[True, True, False, True])
+cand["group"] = np.where(cand.class_rank.isin([1, 3]), "core", "unique")
+cand = cand.sort_values(["strain", "mid_replichore", "class_rank", "uniq_run_len", "best_other_pident"],
+                        ascending=[True, False, True, False, True])
 
 out = []
 for s, g in cand.groupby("strain"):
     lo, hi = gc_limits(genome_gc[s])
     args = dict(BASE, PRIMER_MIN_GC=lo, PRIMER_MAX_GC=hi, PRIMER_INTERNAL_MIN_GC=lo, PRIMER_INTERNAL_MAX_GC=hi)
-    n_genes = 0
+    n_genes = {"core": 0, "unique": 0}
     for idx, r in g.iterrows():
-        if n_genes >= GENES_PER_STRAIN:
-            break
+        if n_genes[r.group] >= GENES_PER_GROUP:
+            continue
         mask = np.load(os.path.join(WORK, f"mask_{s}_{r.seqid}.npy"))[r.start - 1:r.end]
         tmpl = chrom[(s, r.seqid)][r.start - 1:r.end]
         try:
@@ -126,7 +144,7 @@ for s, g in cand.groupby("strain"):
             amp = tmpl[amp_start:amp_end + 1]
             gstart = r.start + amp_start
             out.append(dict(
-                set_id=f"{s}_{r.locus_tag}_{k}", strain=s, route=r.route, class_rank=r.class_rank, locus_tag=r.locus_tag,
+                set_id=f"{s}_{r.locus_tag}_{k}", strain=s, route=r.route, class_rank=r.class_rank, group=r.group, rel_ori=round(r.rel_ori, 3), locus_tag=r.locus_tag,
                 gene=r.gene if isinstance(r.gene, str) else "", product=r["product"], seqid=r.seqid,
                 gene_start=r.start, gene_end=r.end, gene_strand=r.strand,
                 amp_start=gstart, amp_end=gstart + len(amp) - 1, amp_len=len(amp),
@@ -141,7 +159,7 @@ for s, g in cand.groupby("strain"):
             if kept >= SETS_PER_GENE:
                 break
         if kept:
-            n_genes += 1
+            n_genes[r.group] += 1
     print(f"{s}: GC {genome_gc[s]:.2f}, primer GC {lo}-{hi}%, designed on {n_genes} genes")
 
 df = pd.DataFrame(out)

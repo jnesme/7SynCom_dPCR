@@ -1,20 +1,26 @@
 #!/usr/bin/env python
 """Verification of the final pool + report files.
 
-1. In-silico PCR of the pooled primers (every primer combination, <= 3 mismatches)
-   on all 7 genomes: expect exactly 7 products, one per genome, of the designed length.
-2. Knock-out test: for each strain, replace its target amplicon by Ns and confirm the
-   product disappears while the 6 others remain (no hidden alternative site).
-3. amplicons.fasta: amplicon +/- 20 bp flanks, a template for gBlock standards.
-4. oligos.tsv (order sheet) and dimer heatmap PNG.
+1. Exhaustive in-silico PCR of the 14 pooled primers (<= 3 mismatches, every primer
+   combination incl. F+F/R+R) on all 7 genomes: expect exactly 7 products, one per genome.
+2. Knock-out test: for each strain, drop every primer site overlapping its target
+   amplicon (equivalent to replacing the amplicon by Ns) and confirm its product
+   disappears while the 6 others remain (no hidden alternative site).
+3. Restriction enzymes commonly used to fragment gDNA for dPCR that cut none of the
+   7 amplicons (and how often they cut each genome).
+4. amplicons.fasta (amplicon +/- 20 bp, template for gBlock standards), oligos.tsv
+   (order sheet), dimer heatmap.
 """
-import itertools, os, subprocess
+import os
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from Bio import SeqIO
+from Bio.Restriction import RestrictionBatch
+from Bio.Seq import Seq
+from insilico_pcr import build_index, find_sites, products
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK = os.path.join(HERE, "..", "work")
@@ -22,54 +28,43 @@ RES = os.path.join(HERE, "..", "results")
 THREADS = os.environ.get("THREADS", "1")
 FLANK = 20
 MAX_PROD = 3000
-
-
-def sh(cmd):
-    subprocess.run(cmd, shell=True, check=True)
-
+ENZYMES = ["HaeIII", "MseI", "CviQI", "AluI", "EcoRI", "HindIII", "XbaI", "PvuII", "BamHI", "MspI", "Sau3AI", "BsaI"]
+allg = os.path.join(WORK, "all_genomes.fna")
+idx = os.path.join(WORK, "bt_all")
 
 sel = pd.read_csv(os.path.join(RES, "final_multiplex.tsv"), sep="\t")
-genomes = {rec.id: str(rec.seq) for rec in SeqIO.parse(os.path.join(WORK, "all_genomes.fna"), "fasta")}
-
-prim = [(f"{r.strain}_F", r.fwd) for r in sel.itertuples()] + [(f"{r.strain}_R", r.rev) for r in sel.itertuples()]
-ptsv = os.path.join(WORK, "final_pairs.tsv")
-with open(ptsv, "w") as fh:
-    for (na, a), (nb, b) in itertools.combinations_with_replacement(prim, 2):
-        fh.write(f"{na}+{nb}\t{a}\t{b}\n")
-
-
-def pcr(fasta):
-    bed = fasta + ".bed"
-    sh(f"seqkit amplicon -j {THREADS} -m 3 -p {ptsv} --bed {fasta} > {bed}")
-    p = pd.read_csv(bed, sep="\t", header=None, names=["chrom", "start", "end", "name", "score", "strand", "seq"])
-    p = p[(p.end - p.start) <= MAX_PROD]
-    return p.drop_duplicates(["chrom", "start", "end"])
-
+genomes = {rec.id: rec.seq for rec in SeqIO.parse(allg, "fasta")}
+build_index(allg, idx, THREADS)
+sites = find_sites({f"{r.strain}_{role}": getattr(r, role) for r in sel.itertuples() for role in ("fwd", "rev")},
+                   idx, WORK, "final", threads=THREADS)
+exp = {(f"{r.strain}|{r.seqid}", r.amp_start - 1, r.amp_end) for r in sel.itertuples()}
 
 lines = []
-p = pcr(os.path.join(WORK, "all_genomes.fna"))
-p["strain"] = p.chrom.str.split("|").str[0]
-lines.append(f"Pooled in-silico PCR (all {len(prim)} primers, all combinations, <=3 mismatches): {len(p)} products")
+p = products(sites, max_len=MAX_PROD).drop_duplicates(["chrom", "start", "end"])
+lines.append(f"Pooled in-silico PCR (14 primers, all combinations, <=3 mismatches, <= {MAX_PROD} bp): {len(p)} products")
 for r in p.itertuples():
-    lines.append(f"  {r.chrom}:{r.start + 1}-{r.end} ({r.end - r.start} bp) via {r.name}")
-exp = {(f"{r.strain}|{r.seqid}", r.amp_start - 1, r.amp_end) for r in sel.itertuples()}
+    lines.append(f"  {r.chrom}:{r.start + 1}-{r.end} ({r.len} bp) {r.left_oligo}+{r.right_oligo} "
+                 f"mm {r.left_mm}/{r.right_mm}")
 ok1 = set(zip(p.chrom, p.start, p.end)) == exp
 lines.append(f"  -> exactly the 7 designed products: {'PASS' if ok1 else 'FAIL'}")
 
 ok2 = True
 for r in sel.itertuples():
-    ko = os.path.join(WORK, f"ko_{r.strain}.fna")
-    with open(ko, "w") as fh:
-        for cid, seq in genomes.items():
-            if cid == f"{r.strain}|{r.seqid}":
-                seq = seq[:r.amp_start - 1] + "N" * r.amp_len + seq[r.amp_end:]
-            fh.write(f">{cid}\n{seq}\n")
-    q = pcr(ko)
-    q["strain"] = q.chrom.str.split("|").str[0]
-    good = (len(q) == 6) and (r.strain not in set(q.strain))
+    hit = (sites.chrom == f"{r.strain}|{r.seqid}") & (sites.end > r.amp_start - 1) & (sites.start < r.amp_end)
+    q = products(sites[~hit], max_len=MAX_PROD).drop_duplicates(["chrom", "start", "end"])
+    strains_left = set(q.chrom.str.split("|").str[0])
+    good = len(q) == 6 and r.strain not in strains_left
     ok2 &= good
-    lines.append(f"Knock-out {r.strain}: {len(q)} products, {r.strain} product absent: {'PASS' if good else 'FAIL'}")
-    os.remove(ko); os.remove(ko + ".bed")
+    lines.append(f"Knock-out {r.strain}: {len(q)} products remain, {r.strain} product absent: {'PASS' if good else 'FAIL'}")
+
+rb = RestrictionBatch(ENZYMES)
+amps = {r.strain: Seq(r.amplicon) for r in sel.itertuples()}
+lines.append("Restriction enzymes (gDNA fragmentation) vs amplicons / genome cut frequency:")
+for enz in sorted(rb, key=str):
+    cut_amps = [s for s, a in amps.items() if enz.search(a)]
+    med = np.median([len(enz.search(g, linear=False)) for g in genomes.values()])
+    lines.append(f"  {str(enz):8s} site {enz.site:10s} cuts amplicons: {','.join(cut_amps) or 'none':20s} "
+                 f"median cuts/replicon {med:,.0f}{'   <- usable' if not cut_amps else ''}")
 
 with open(os.path.join(RES, "amplicons.fasta"), "w") as fh:
     for r in sel.itertuples():

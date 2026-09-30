@@ -11,6 +11,7 @@ text_core_1x  : key occurs exactly once in each of the 7 genomes (named single-c
 No sequence comparison is done here; step 02 verifies nucleotide uniqueness.
 """
 import os, re
+import numpy as np
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -36,18 +37,20 @@ def key(r):
 cds["text_key"] = cds.apply(key, axis=1)
 # a gene symbol and a product can describe the same gene in another genome where the
 # symbol is missing -> also count the product string for named genes
-cds["prod_key"] = "product:" + cds["product"].fillna("").str.lower().str.strip()
+prod = cds["product"].fillna("").str.lower().str.strip()
+cds["prod_key"] = np.where(prod != "", "product:" + prod, "")
 
 k = cds[cds.text_key != ""]
 by_key = k.groupby(["text_key", "strain"]).size().unstack(fill_value=0).reindex(columns=strains, fill_value=0)
-by_prod = cds.groupby(["prod_key", "strain"]).size().unstack(fill_value=0).reindex(columns=strains, fill_value=0)
+by_prod = cds[cds.prod_key != ""].groupby(["prod_key", "strain"]).size().unstack(fill_value=0).reindex(columns=strains, fill_value=0)
 
 cls = []
 for _, r in cds.iterrows():
     if not r.text_key:
         cls.append(""); continue
     row = by_key.loc[r.text_key]
-    prow = by_prod.loc[r.prod_key] if not generic.search(str(r["product"])) else None
+    # cross-check the product string too, unless it is empty/generic (not comparable)
+    prow = by_prod.loc[r.prod_key] if r.prod_key and not generic.search(str(r["product"])) else None
     others = [s for s in strains if s != r.strain]
     if row[r.strain] == 1 and (row[others] == 0).all() and (prow is None or (prow[others] == 0).all()):
         cls.append("text_unique")

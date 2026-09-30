@@ -1,20 +1,23 @@
 #!/usr/bin/env python
 """Choose one set per strain that is mutually compatible for multiplexing.
 
-Pool = best set per gene among specificity-passing sets; top N genes per strain.
-Pairwise interactions (primer3 thermodynamics, same buffer as design, 37 C):
-  any-dimer dG between every oligo pair of two sets (primers + probes),
+Pool = best set per gene among specificity-passing sets (mid-replichore first, then
+route class, fewest 3-mismatch background sites, primer3 penalty); top N genes per strain.
+Pairwise interactions between sets (primer3 thermodynamics, design buffer, 37 C):
+  any-dimer dG between every oligo pair of two different sets (primers + probes),
   3'-anchored dG where the extendable 3' end is a primer (probes are 3'-blocked).
-All 7-way combinations are enumerated; objective (lexicographic):
+Within-set dimers were constrained by primer3 at design time and are not part of the
+between-set objective. All 7-way combinations are enumerated; objective (lexicographic):
   max worst any-dimer dG -> max worst 3'-dimer dG -> min primer Tm spread -> min class_rank sum.
-The best combos are then checked for cross-set products (in-silico PCR with every
-primer pair from the pool) and probe binding in other sets' amplicons; the first
-combo that passes is kept. Also proposes a 4+3 split into two wells for <=5-colour instruments.
+Best combos are checked for cross-set products (exhaustive in-silico PCR with every primer
+of the pool, insilico_pcr.py) and for probes binding other sets' amplicons.
+Also proposes a 4+3 split into two wells for <=5-colour instruments.
 """
-import itertools, os, subprocess
+import itertools, os
 import numpy as np
 import pandas as pd
 import primer3
+from insilico_pcr import build_index, find_sites, products
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK = os.path.join(HERE, "..", "work")
@@ -25,24 +28,22 @@ MAX_PROD = 3000
 PROBE_MIN_MM = 5  # probe must have >= 5 mismatches to any other amplicon
 COND = dict(mv_conc=50.0, dv_conc=3.8, dntp_conc=0.8, dna_conc=800.0, temp_c=37.0)
 allg = os.path.join(WORK, "all_genomes.fna")
-
-
-def sh(cmd):
-    subprocess.run(cmd, shell=True, check=True)
-
+idx = os.path.join(WORK, "bt_all")
+rc = str.maketrans("ACGT", "TGCA")
 
 rep = pd.read_csv(os.path.join(RES, "specificity_report.tsv"), sep="\t")
-ok = rep[rep["pass"]].sort_values(["strain", "class_rank", "penalty"])
-pool = ok.groupby(["strain", "locus_tag"], sort=False).head(1).groupby("strain").head(N_PER_STRAIN)
-strains = sorted(pool.strain.unique())
-missing = sorted(set(rep.strain) - set(strains))
+ok = rep[rep["pass"]]
+ok = ok.assign(mid=ok.rel_ori.between(0.3, 0.7)).sort_values(
+    ["strain", "mid", "class_rank", "n_3mm_sites", "penalty"], ascending=[True, False, True, True, True])
+missing = sorted(set(rep.strain) - set(ok.strain))
 if missing:
-    print("WARNING: no passing set for", missing)
-pool = pool.reset_index(drop=True)
-print(pool.groupby("strain").size())
+    raise SystemExit(f"no specificity-passing set for {missing}; relax design or add fallback loci")
+pool = ok.groupby(["strain", "locus_tag"], sort=False).head(1).groupby("strain").head(N_PER_STRAIN).reset_index(drop=True)
+strains = sorted(pool.strain.unique())
+print(pool.groupby("strain").agg(n=("set_id", "size"), mid_replichore=("mid", "sum")))
 
 oligos = {i: [("fwd", r.fwd), ("rev", r.rev), ("probe", r.probe)] for i, r in pool.iterrows()}
-dg_cache = {}
+dg_cache, end_cache = {}, {}
 
 
 def dg_any(a, b):
@@ -53,53 +54,49 @@ def dg_any(a, b):
 
 
 def dg_end(a, b):
-    """3' end of a annealed on b."""
-    return primer3.calc_end_stability(a, b, **COND).dg / 1000.0
+    """3' end of a annealed on b (asymmetric)."""
+    if (a, b) not in end_cache:
+        end_cache[(a, b)] = primer3.calc_end_stability(a, b, **COND).dg / 1000.0
+    return end_cache[(a, b)]
 
 
 n = len(pool)
-ANY = np.zeros((n, n)); END = np.zeros((n, n))
-for i in range(n):
-    for j in range(i, n):
-        if pool.strain[i] == pool.strain[j] and i != j:
-            continue
-        pairs = [(x, y) for x in oligos[i] for y in oligos[j]]
-        ANY[i, j] = ANY[j, i] = min(dg_any(x[1], y[1]) for x, y in pairs)
-        ends = [dg_end(x[1], y[1]) for x, y in pairs if x[0] != "probe"] + \
-               [dg_end(y[1], x[1]) for x, y in pairs if y[0] != "probe"]
-        END[i, j] = END[j, i] = min(ends)
+ANY = np.zeros((n, n)); END = np.zeros((n, n))  # diagonal (within-set) stays 0 = neutral
+for i, j in itertools.combinations(range(n), 2):
+    if pool.strain[i] == pool.strain[j]:
+        continue
+    pairs = [(x, y) for x in oligos[i] for y in oligos[j]]
+    ANY[i, j] = ANY[j, i] = min(dg_any(x[1], y[1]) for x, y in pairs)
+    ends = [dg_end(x[1], y[1]) for x, y in pairs if x[0] != "probe"] + \
+           [dg_end(y[1], x[1]) for x, y in pairs if y[0] != "probe"]
+    END[i, j] = END[j, i] = min(ends)
 
 tms = pool[["fwd_tm", "rev_tm"]].values
 by_strain = [list(pool.index[pool.strain == s]) for s in strains]
 res = []
 for combo in itertools.product(*by_strain):
     c = np.array(combo)
-    sub_any = ANY[np.ix_(c, c)]; sub_end = END[np.ix_(c, c)]
     t = tms[c].ravel()
-    res.append((sub_any.min(), sub_end.min(), t.max() - t.min(), pool.class_rank[c].sum(), combo))
+    res.append((ANY[np.ix_(c, c)].min(), END[np.ix_(c, c)].min(), t.max() - t.min(),
+                pool.class_rank[c].sum(), combo))
 res.sort(key=lambda x: (-round(x[0], 1), -round(x[1], 1), round(x[2], 1), x[3]))
 print(f"{len(res):,} combinations scored; best worst-dG any={res[0][0]:.2f} end={res[0][1]:.2f} kcal/mol")
 
-rc = str.maketrans("ACGT", "TGCA")
+# binding sites of every pool primer, computed once (<= 3 mismatches, exhaustive)
+build_index(allg, idx, THREADS)
+psites = find_sites({f"{i}__{role}": seq for i in pool.index for role, seq in oligos[i] if role != "probe"},
+                    idx, WORK, "pool", threads=THREADS)
+psites["set"] = psites.name.str.split("__").str[0].astype(int)
 
 
 def cross_check(combo):
     sel = pool.loc[list(combo)]
-    prim = [(f"{r.set_id}__F", r.fwd) for r in sel.itertuples()] + [(f"{r.set_id}__R", r.rev) for r in sel.itertuples()]
-    ptsv = os.path.join(WORK, "pool_pairs.tsv")
-    with open(ptsv, "w") as fh:
-        for (na, a), (nb, b) in itertools.combinations_with_replacement(prim, 2):
-            fh.write(f"{na}+{nb}\t{a}\t{b}\n")
-    bed = os.path.join(WORK, "pool_pairs.bed")
-    sh(f"seqkit amplicon -j {THREADS} -m 2 -p {ptsv} --bed {allg} > {bed}")
-    p = pd.read_csv(bed, sep="\t", header=None, names=["chrom", "start", "end", "name", "score", "strand", "seq"])
-    p = p[(p.end - p.start) <= MAX_PROD].drop_duplicates(["chrom", "start", "end"])
+    p = products(psites[psites.set.isin(combo)], max_len=MAX_PROD)
+    p = p.drop_duplicates(["chrom", "start", "end"])
     expected = {(f"{r.strain}|{r.seqid}", r.amp_start - 1, r.amp_end) for r in sel.itertuples()}
-    found = set(zip(p.chrom, p.start, p.end))
     extra = p[[k not in expected for k in zip(p.chrom, p.start, p.end)]]
-    # probes against the other sets' amplicons
-    # exhaustive ungapped scan of each probe along both strands of every other amplicon
-    probe_hits = []
+    found = set(zip(p.chrom, p.start, p.end))
+    probe_hits = []  # exhaustive ungapped scan of each probe on both strands of the other amplicons
     for a in sel.itertuples():
         L = len(a.probe)
         for b in sel.itertuples():
@@ -113,7 +110,7 @@ def cross_check(combo):
 
 
 chosen = None
-for k, r in enumerate(res[:200]):
+for k, r in enumerate(res[:500]):
     ok_on, extra, probe_hits = cross_check(r[4])
     if ok_on and extra.empty and not probe_hits:
         chosen = r; break
@@ -122,14 +119,14 @@ if chosen is None:
     raise SystemExit("no combination passed the cross-reactivity check")
 
 sel = pool.loc[list(chosen[4])].copy()
-print(f"\nchosen combination: worst any-dimer dG {chosen[0]:.2f}, worst 3'-dimer dG {chosen[1]:.2f} kcal/mol, "
-      f"primer Tm spread {chosen[2]:.2f} C")
+print(f"\nchosen combination: worst between-set any-dimer dG {chosen[0]:.2f}, worst 3'-dimer dG "
+      f"{chosen[1]:.2f} kcal/mol, primer Tm spread {chosen[2]:.2f} C")
 
-# 4+3 well split maximising the worst within-well interaction
-idx = list(sel.index)
+# 4+3 well split maximising the worst within-well (between-set) interaction
+ids = list(sel.index)
 best = None
-for w1 in itertools.combinations(idx, 4):
-    w2 = [i for i in idx if i not in w1]
+for w1 in itertools.combinations(ids, 4):
+    w2 = [i for i in ids if i not in w1]
     score = min(ANY[np.ix_(w, w)].min() for w in (list(w1), w2))
     if best is None or score > best[0]:
         best = (score, w1, w2)
@@ -141,8 +138,8 @@ sel.to_csv(os.path.join(RES, "final_multiplex.tsv"), sep="\t", index=False)
 pool.to_csv(os.path.join(RES, "candidates_pool.tsv"), sep="\t", index=False)
 ok.to_csv(os.path.join(RES, "candidates_all.tsv"), sep="\t", index=False)
 
-# oligo-level dimer matrix of the final pool
 ol = [(f"{r.strain}_{role}", getattr(r, role)) for r in sel.itertuples() for role in ("fwd", "rev", "probe")]
 m = pd.DataFrame([[dg_any(a, b) for _, b in ol] for _, a in ol], index=[x for x, _ in ol], columns=[x for x, _ in ol])
 m.round(2).to_csv(os.path.join(RES, "dimer_matrix.tsv"), sep="\t")
-print(sel[["strain", "species_NCBI", "locus_tag", "gene", "product", "amp_len", "fwd", "rev", "probe", "well_4plus3"]].to_string(index=False))
+print(sel[["strain", "species_NCBI", "locus_tag", "gene", "product", "rel_ori", "amp_len", "fwd", "rev", "probe",
+           "well_4plus3"]].to_string(index=False))

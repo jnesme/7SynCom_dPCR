@@ -4,21 +4,29 @@ Goal: design primer + hydrolysis-probe sets that can be multiplexed in **digital
 
 Reference: Niu B, Paulson JN, Zheng X, Kolter R (2017). *Simplified and representative bacterial community of maize roots.* PNAS 114:E2450–E2459. Genomes: BioProject **PRJNA357031**.
 
-## Status (2026-09-30)
+## Status (2026-09-30): design complete and verified in silico
 
-| Step | Script | Status |
-|---|---|---|
-| Genome download | (manual, see below) | done, all md5 OK |
-| 00 prep | `00_prep.py` | done |
-| 01 homology classes (mmseqs2 all-vs-all) | `01_annotation_candidates.py` | done (LSF job 29536664) |
-| 01a GFF text-parsing classes | `01a_gff_text_unique.py` | done |
-| 02 nucleotide uniqueness (18-mers) + single-copy BLAST | `02_sequence_unique.py` | done |
-| 03 primer/probe design (primer3) | `03_design.py` | done: 1,031 sets |
-| 04 in-silico specificity | `04_specificity.py` | **running** (LSF job 29536679) |
-| 05 multiplex selection | `05_multiplex.py` | pending |
-| 06 verification + report | `06_verify_report.py` | pending |
+The seven assays are in `primer_design/results/oligos.tsv` (order sheet) and `final_multiplex.tsv` (all details).
 
-The final assays do not exist yet, so `primer_design/results/` is still empty.
+| Strain | Species (NCBI) | Target locus | Product | Route | rel_ori | Amplicon | Well (4+3) |
+|---|---|---|---|---|---|---|---|
+| AA1 | *S. maltophilia* | BTU49_RS02115 *rplP* | 50S ribosomal protein L16 | core 1:1, both routes | 0.39 | 101 bp | W2 |
+| AA2 | *B. pituitosa* | BUE85_RS12620 *chpT* | histidine phosphotransferase ChpT | unique, both routes | 0.64 | 134 bp | W1 |
+| AA3 | *C. pusillum* | BUE88_RS14975 | hypothetical protein | unique (homology only) | 0.37 | 143 bp | W1 |
+| AA4 | *E. ludwigii* | BUE86_RS06915 | ATP-dependent endonuclease | unique, both routes | 0.65 | 76 bp | W1 |
+| AA5 | *C. indologenes* | BUE84_RS01130 *bshC* | BshC | unique, both routes | 0.56 | 107 bp | W1 |
+| AA6 | *H. robiniae* | BUQ72_RS22945 | AAA ATPase | unique, both routes | 0.58 | 88 bp | W2 |
+| AA7 | *P. putida* | BUQ73_RS07385 | M14 carboxypeptidase | unique, both routes | 0.63 | 135 bp | W2 |
+
+`rel_ori` is the target's distance from the replication origin (dnaA): 0 = origin, 1 = terminus. All seven targets are mid-replichore (0.3–0.7).
+
+In-silico verification (`results/verification.txt`):
+- **Pooled in-silico PCR:** all 14 primers, every primer combination, ≤ 3 mismatches, over the 7 full genomes including plasmids. Result: **exactly the 7 designed products** (all perfect matches).
+- **Knock-out test:** masking each target removes only that strain's product (7/7 PASS).
+- **Primer Tm:** 59.7–60.9 °C.
+- **Oligo interactions:** the worst interaction between two different sets is −5.64 kcal/mol (3′-anchored: −4.48). The worst oligo pair in the whole pool is −7.42 kcal/mol, which includes pairs within the same set.
+- **Probe cross-talk:** each probe has ≥ 5 mismatches to every other amplicon.
+- **Restriction enzymes** for fragmenting gDNA before dPCR that cut none of the 7 amplicons: **EcoRI, HindIII, PvuII, BamHI, BsaI, XbaI**. HaeIII and MspI cut 5 of the amplicons, so avoid them.
 
 ## Genomes
 
@@ -36,7 +44,8 @@ The final assays do not exist yet, so `primer_design/results/` is still empty.
 
 ## Design pipeline (`primer_design/`)
 
-- Environment: conda env `dpcr-design` (`primer_design/envs/dpcr-design.yml`: primer3-py, mmseqs2, BLAST+, seqkit, jellyfish, biopython, pandas).
+- Environment: conda env `dpcr-design` (`primer_design/envs/dpcr-design.yml`: primer3-py, mmseqs2, BLAST+, bowtie1, jellyfish, seqkit, biopython, pandas).
+- Running time: steps 03–06 take about 7 min on one core; only 01 (mmseqs2) and 02 (k-mer scan) benefit from LSF.
 - Cluster: run `bsub < primer_design/submit_dpcr_design.sh` (LSF, queue `hpc`, 8 cores). Edit `STEPS=` to run a subset of steps; steps reuse outputs that already exist.
 
 1. **00 prep**: per-strain chromosome/plasmid FASTA, a CDS table from the GFF, and proteins keyed `strain|locus_tag`. Only chromosomes are used as targets, because plasmid copy number is not 1.
@@ -48,36 +57,58 @@ The final assays do not exist yet, so `primer_design/results/` is still empty.
    - *text_unique* = the key occurs once, in one genome only.
    - *text_core_1x* = the key occurs exactly once in every genome (146 keys, e.g. gyrB, recA, dnaK, atpD).
    - Caveat: this route over-calls uniqueness when naming is uneven. AA4 has 1,076 text-unique genes because Enterobacter genes carry E. coli symbols that the other genomes' annotations lack. Step 02 filters these.
-4. **02 sequence-aware route**: canonical 18-mers counted over all replicons of all 7 genomes. A position is kept only if every 18-mer covering it occurs once in the whole set, which gives 75–90 % of each chromosome. A candidate gene from either route needs:
+4. **02 sequence-aware route**: canonical 18-mers counted over all replicons of all 7 genomes. A position is kept only if every 18-mer covering it occurs once in the whole set, which gives 65–93 % of each chromosome. A candidate gene from either route needs:
    - a unique stretch ≥ 150 bp;
    - a single BLAST hit in its own genome (≥ 80 % id over ≥ 50 bp).
 
    6,367 unique intergenic windows are kept as a fallback.
 5. **03 design**: primer3 designs within the unique sequence only.
+   - **Target location:** only the dnaA-bearing chromosome is used. This matters for AA2: its secondary chromosomes are not guaranteed to be present 1:1 with the primary one.
+   - **Origin distance:** `rel_ori` = distance from dnaA, from 0 (origin) to 1 (terminus). Mid-replichore targets (0.3–0.7) are preferred, which limits the origin-to-terminus copy-number bias in growing cells.
+   - **Gene quota:** per strain, 40 core single-copy genes and 40 strain-unique genes. Rank order: unique by both routes, core by both routes, unique by homology only, core by one route, then text-unique only.
    - Amplicon 70–150 bp. Primers 18–25 nt, Tm 58–62 °C. Probe Tm 66–71 °C, on either strand, with no 5′ G.
-   - Buffer: 50 mM K⁺, 3.8 mM Mg²⁺, 800 nM primers, 400 nM probe.
-   - Primer GC limits follow each genome's GC, which ranges from 36 % (AA5) to 71 % (AA3).
-   - Ranking: core single-copy genes found by both routes first, then genes that both routes call unique, then those found by one route only.
-6. **04 specificity**: `seqkit amplicon` (≤ 3 mismatches per primer) on all 7 genomes, plasmids included; a set must give exactly one product, at the designed locus. blastn-short scores every off-target site of each primer; a site with < 4 mismatches in total and < 2 mismatches in the 3′-terminal 5 nt rejects the set.
-7. **05 multiplex**: the top 6 genes per strain, all 6⁷ combinations scored with primer3.
-   - Objective: best worst-case heterodimer ΔG, then best 3′-anchored ΔG, then smallest Tm spread.
-   - Checks on the chosen pool: in-silico PCR with every primer pairing (so no cross-set products), and every probe needs ≥ 5 mismatches to all other amplicons.
-   - It also proposes a 4 + 3 split into two wells for instruments with ≤ 5 colours.
+   - Buffer: 50 mM K⁺, 3.8 mM Mg²⁺, 800 nM primers, 400 nM probe. Primer GC limits follow each genome's GC.
+6. **04 specificity**: `insilico_pcr.py` uses **bowtie1** (`-v 3 -a`) to list *every* binding site with ≤ 3 mismatches of every oligo on all 7 genomes, including plasmids. Any + site paired with a downstream − site counts as a product, including F+F and R+R.
+   - A set needs exactly one product (≤ 3 kb), at the designed locus.
+   - A lone primer site is *dangerous*, and rejects the set, if it has ≤ 1 mismatch, or 2 mismatches with an intact 3′ pentamer.
+   - Sites with 3 mismatches are random background (about 13 per primer in 36 Mb); they are only counted and used for ranking.
+   - *Note:* `seqkit amplicon` was used first but was dropped. With mismatches allowed it returns only one (the longest) product per primer pair and strand, which hid true products behind spurious Mb-long ones.
+7. **05 multiplex**: the top 6 passing genes per strain, and all 6⁷ = 279,936 combinations.
+   - Objective: best worst-case heterodimer ΔG *between sets*, then best 3′-anchored ΔG, then smallest Tm spread. Within-set dimers were already constrained by primer3.
+   - Checks: exhaustive in-silico PCR of the pooled primers, and each probe needs ≥ 5 mismatches to every other amplicon.
+   - It also proposes a 4 + 3 well split. The step stops with an error if any strain has no passing set.
 8. **06 verification**:
-   - Pooled in-silico PCR on the 7 genomes must give exactly 7 products.
-   - Knock-out test per strain: mask its target, and its product must disappear.
-   - Also writes `amplicons.fasta` (amplicon ± 20 bp, as gBlock standards), `oligos.tsv` (order sheet), and a dimer heatmap.
+   - Pooled in-silico PCR must give exactly 7 products.
+   - Knock-out test per strain (drop the primer sites inside the target, as if masked with Ns).
+   - Restriction-enzyme compatibility of the amplicons.
+   - Writes `amplicons.fasta` (± 20 bp, as gBlock standards), `oligos.tsv` and the dimer heatmap.
 
-## Progress so far
+## Review follow-up
 
-- **Candidates after step 02:** every strain keeps single-copy candidate genes, mostly core genes present once in all genomes, with 16–61 text-core genes per strain.
-- **Step 03 designs:** 1,031 primer + probe sets over 80 genes per strain.
+A separate agent reviewed the workflow. These findings were fixed:
+- seqkit's non-exhaustive in-silico PCR, replaced by bowtie1 pairing;
+- walltime;
+- BLAST HSP truncation, since the BLAST step was removed;
+- core-first ranking hid the strain-unique genes, now replaced by a quota;
+- AA2 secondary replicons, now dnaA chromosome only;
+- the within-set diagonal distorted the multiplex objective;
+- a 6-plex could be written silently;
+- no ori-position control, now `rel_ori`;
+- mismatch thresholds were inconsistent;
+- the text route could never be ranked into the designs;
+- the empty-product key;
+- O(n²) prep.
+
+Still open:
+- **No host or contaminant screen.** The 14 primers have not been screened against *Zea mays* (nuclear, chloroplast, mitochondrial) or common reagent contaminants. Do this if the assays will be used on root DNA.
+- **Cached files are not tied to their parameters.** `allvsall.m8`, `k18_repeated.txt` and the BLAST/bowtie indexes are reused whenever they exist. After changing `EVALUE`, `MIN_COV` or `K`, delete `primer_design/work/`.
+- **AA4 target may sit in an unstable region.** BUE86_RS06915 is an "ATP-dependent endonuclease" (an OLD-family gene; these often sit in defence islands). It is not near an annotated mobile element, but if you want a housekeeping target instead, take the next AA4 set from `results/candidates_pool.tsv`.
+- **Dye and amplitude plan.** Assign dyes once the platform is chosen. For a 7-in-1 well, amplitude multiplexing needs different probe concentrations per assay, tuned experimentally.
 
 ## Still to do
 
-- Finish steps 04–06 and review the final 7 assays.
-- Choose the platform and dyes. The design is generic, and the channel count decides whether the 7 assays fit in one well or need the 4 + 3 split.
 - Wet-lab validation:
   - efficiency of each assay alone, and alone vs multiplexed, on the gDNA of each pure strain;
   - a cross-reactivity matrix (each strain's DNA against all 7 assays);
-  - calibration against gBlock standards.
+  - calibration against gBlock standards (`results/amplicons.fasta`).
+- Digest the gDNA before partitioning with one of the compatible enzymes listed above.
