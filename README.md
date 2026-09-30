@@ -20,6 +20,39 @@ The seven assays are in `primer_design/results/oligos.tsv` (order sheet) and `fi
 
 `rel_ori` is the target's distance from the replication origin (dnaA): 0 = origin, 1 = terminus. All seven targets are mid-replichore (0.3–0.7).
 
+### Oligos to order (best set, 21 oligos)
+
+All sequences are 5′→3′. The same list is in `primer_design/results/oligos.tsv`. Tm was calculated at 50 mM K⁺, 3.8 mM Mg²⁺, 800 nM primer and 400 nM probe.
+
+| Name | Strain | Type | Sequence (5′→3′) | nt | Tm °C | GC % |
+|---|---|---|---|---|---|---|
+| AA1_BTU49_RS02115_F | AA1 | F | `AAGAAGCCCATCGAAGTT` | 18 | 60.4 | 44.4 |
+| AA1_BTU49_RS02115_R | AA1 | R | `ACACCCTCGATTTCATAGAT` | 20 | 59.9 | 40.0 |
+| AA1_BTU49_RS02115_P | AA1 | probe | `CCCAGTATTCCACGTTGCCCTTAC` | 24 | 68.3 | 54.2 |
+| AA2_BUE85_RS12620_F | AA2 | F | `CAATCCACGTTTTGTCATCA` | 20 | 60.7 | 40.0 |
+| AA2_BUE85_RS12620_R | AA2 | R | `GAAGCAGTGTGTAATATGGC` | 20 | 60.6 | 45.0 |
+| AA2_BUE85_RS12620_P | AA2 | probe | `CGTACCGCCAAAGTTCCTCGAA` | 22 | 68.1 | 54.5 |
+| AA3_BUE88_RS14975_F | AA3 | F | `TTGTAGTCCATAACGACCTT` | 20 | 60.0 | 40.0 |
+| AA3_BUE88_RS14975_R | AA3 | R | `CTGCATCTCTACAACTCGAT` | 20 | 60.9 | 45.0 |
+| AA3_BUE88_RS14975_P | AA3 | probe | `CGGAATCGACGTCAAGACACTCAT` | 24 | 67.7 | 50.0 |
+| AA4_BUE86_RS06915_F | AA4 | F | `GGTACATAAAGTGCTCCATG` | 20 | 59.9 | 45.0 |
+| AA4_BUE86_RS06915_R | AA4 | R | `CTAAATAATGAGCGCGAAGA` | 20 | 59.7 | 40.0 |
+| AA4_BUE86_RS06915_P | AA4 | probe | `AGAGCGCGACCACTTAACCATG` | 22 | 68.2 | 54.5 |
+| AA5_BUE84_RS01130_F | AA5 | F | `GGAACGACTTGAAAATCTGT` | 20 | 60.0 | 40.0 |
+| AA5_BUE84_RS01130_R | AA5 | R | `CAAGCCACGAATAACCATAA` | 20 | 59.9 | 40.0 |
+| AA5_BUE84_RS01130_P | AA5 | probe | `ACGCTAAAATTATATACTCTCTCCTGCCA` | 29 | 66.5 | 37.9 |
+| AA6_BUQ72_RS22945_F | AA6 | F | `TCGTCTCTCAAGGATTCTTT` | 20 | 60.0 | 40.0 |
+| AA6_BUQ72_RS22945_R | AA6 | R | `TTACCGGAACAAGAAGATCT` | 20 | 60.0 | 40.0 |
+| AA6_BUQ72_RS22945_P | AA6 | probe | `AACGTTGACTCTTTCTCCTCCGAC` | 24 | 67.4 | 50.0 |
+| AA7_BUQ73_RS07385_F | AA7 | F | `GTATAACCATGCACTGTCTG` | 20 | 59.9 | 45.0 |
+| AA7_BUQ73_RS07385_R | AA7 | R | `GGAAATTCCCCATGTGTTTA` | 20 | 59.7 | 40.0 |
+| AA7_BUQ73_RS07385_P | AA7 | probe | `TTGTGCAGTGTGACCAAGGACTTC` | 24 | 68.4 | 50.0 |
+
+- **Primers:** standard desalted.
+- **Probes:** hydrolysis probes with a 5′ reporter dye and a 3′ quencher. Choose the dyes once the platform and channel layout are set, following the W1/W2 grouping above. Double-quenched probes are advisable because several probes are ≥ 24 nt, and the AA5 probe is 29 nt.
+- **Quantification standards:** order the 7 amplicons with ±20 bp flanks as gBlocks, from `primer_design/results/amplicons.fasta`.
+- **Backups:** other assays per strain that passed all checks are in `primer_design/results/candidates_pool.tsv`.
+
 In-silico verification (`results/verification.txt`):
 - **Pooled in-silico PCR:** all 14 primers, every primer combination, ≤ 3 mismatches, over the 7 full genomes including plasmids. Result: **exactly the 7 designed products** (all perfect matches).
 - **Knock-out test:** masking each target removes only that strain's product (7/7 PASS).
