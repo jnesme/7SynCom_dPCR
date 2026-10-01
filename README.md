@@ -117,6 +117,10 @@ In-silico verification (`results/verification.txt`):
    - Writes `amplicons.fasta` (± 20 bp, as gBlock standards), `oligos.tsv` and the dimer heatmap.
 9. **07 figures**: `07_figures.py` draws Figures 1–4 (see [Figures](#figures)).
 
+## R version (teaching copy)
+
+`primer_design/R/` holds an R / tidyverse translation of the whole pipeline (steps 00–07), with its own conda env (`dpcr-design-r`), LSF submit script, results and figures. It selects the same 7 assays and gives the same verification results as the Python version. See `primer_design/R/README.md`.
+
 ## Figures
 
 The figures are in `primer_design/figures/` as PNG (300 dpi) and PDF. `primer_design/scripts/07_figures.py` regenerates them from the pipeline outputs.

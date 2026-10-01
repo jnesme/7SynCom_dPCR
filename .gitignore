@@ -14,3 +14,4 @@ __pycache__/
 primer_design/R/work/
 primer_design/R/logs/
 !primer_design/figures/*.pdf
+!primer_design/R/figures/*.pdf

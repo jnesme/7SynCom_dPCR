@@ -1,0 +1,30 @@
+Pooled in-silico PCR (14 primers, all combinations, <=3 mismatches, <= 3000 bp): 7 products
+  AA1|NZ_CP018756.1:463971-464071 (101 bp) AA1_fwd+AA1_rev mm 0/0
+  AA2|NZ_CP018780.1:1654857-1654990 (134 bp) AA2_fwd+AA2_rev mm 0/0
+  AA3|NZ_CP018783.1:3146183-3146325 (143 bp) AA3_fwd+AA3_rev mm 0/0
+  AA4|NZ_CP018785.1:1427595-1427670 (76 bp) AA4_fwd+AA4_rev mm 0/0
+  AA5|NZ_CP018786.1:260438-260544 (107 bp) AA5_fwd+AA5_rev mm 0/0
+  AA6|NZ_CP018845.1:5172625-5172712 (88 bp) AA6_fwd+AA6_rev mm 0/0
+  AA7|NZ_CP018846.1:1610579-1610713 (135 bp) AA7_fwd+AA7_rev mm 0/0
+  -> exactly the 7 designed products: PASS
+Knock-out AA1: 6 products remain, AA1 product absent: PASS
+Knock-out AA2: 6 products remain, AA2 product absent: PASS
+Knock-out AA3: 6 products remain, AA3 product absent: PASS
+Knock-out AA4: 6 products remain, AA4 product absent: PASS
+Knock-out AA5: 6 products remain, AA5 product absent: PASS
+Knock-out AA6: 6 products remain, AA6 product absent: PASS
+Knock-out AA7: 6 products remain, AA7 product absent: PASS
+Restriction enzymes (gDNA fragmentation) vs amplicons / genome cut frequency:
+  AluI     site AGCT     cuts amplicons: AA3,AA7              median cuts/replicon 12,345
+  BamHI    site GGATCC   cuts amplicons: none                 median cuts/replicon 504   <- usable
+  BsaI     site GGTCTC   cuts amplicons: none                 median cuts/replicon 780   <- usable
+  CviQI    site GTAC     cuts amplicons: AA2,AA3,AA4          median cuts/replicon 8,430
+  EcoRI    site GAATTC   cuts amplicons: none                 median cuts/replicon 687   <- usable
+  HaeIII   site GGCC     cuts amplicons: AA1,AA2,AA3,AA4,AA7  median cuts/replicon 10,491
+  HindIII  site AAGCTT   cuts amplicons: none                 median cuts/replicon 379   <- usable
+  MseI     site TTAA     cuts amplicons: AA4                  median cuts/replicon 1,678
+  MspI     site CCGG     cuts amplicons: AA1,AA2,AA4,AA6,AA7  median cuts/replicon 14,104
+  PvuII    site CAGCTG   cuts amplicons: none                 median cuts/replicon 1,364   <- usable
+  Sau3AI   site GATC     cuts amplicons: AA1,AA6              median cuts/replicon 20,680
+  XbaI     site TCTAGA   cuts amplicons: none                 median cuts/replicon 36   <- usable
+Worst oligo-oligo heterodimer dG in pool (excluding self): -7.42 kcal/mol

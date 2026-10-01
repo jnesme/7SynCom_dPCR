@@ -1,0 +1,13 @@
+name: dpcr-design-r
+channels: [conda-forge, bioconda]
+dependencies:
+  - r-base=4.4
+  - r-tidyverse
+  - r-circlize
+  - r-patchwork
+  - bioconductor-biostrings
+  - primer3          # primer3_core + ntthal binaries (design + thermodynamics)
+  - mmseqs2
+  - jellyfish
+  - bowtie
+  - blast
