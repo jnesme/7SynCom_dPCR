@@ -9,3 +9,8 @@ primer_design/logs/
 *.pdf
 
 __pycache__/
+
+# R teaching copy: intermediate files and logs
+primer_design/R/work/
+primer_design/R/logs/
+!primer_design/figures/*.pdf

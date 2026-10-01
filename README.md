@@ -115,6 +115,63 @@ In-silico verification (`results/verification.txt`):
    - Knock-out test per strain (drop the primer sites inside the target, as if masked with Ns).
    - Restriction-enzyme compatibility of the amplicons.
    - Writes `amplicons.fasta` (± 20 bp, as gBlock standards), `oligos.tsv` and the dimer heatmap.
+9. **07 figures**: `07_figures.py` draws Figures 1–4 (see [Figures](#figures)).
+
+## Figures
+
+The figures are in `primer_design/figures/` as PNG (300 dpi) and PDF. `primer_design/scripts/07_figures.py` regenerates them from the pipeline outputs.
+
+### Figure 1. Design workflow
+
+![Figure 1](primer_design/figures/fig1_workflow.png)
+
+**Figure 1. Workflow used to design the 7-plex dPCR assay, with the number of genes or assays kept at each step.**
+- **Input:** the seven complete SynCom genomes (BioProject PRJNA357031, RefSeq PGAP annotation): 33,170 coding sequences on 9 chromosomes and 2 plasmids.
+- **Three routes** (grey boxes) run in parallel:
+  - **A, GFF text parsing.** Genes whose gene symbol or product name occurs once, in one genome only (1,979). Genes named exactly once in every genome (1,022).
+  - **B, protein homology** (mmseqs2 all-vs-all). Genes with no homolog in the other six genomes and no paralog (7,411). Genes present as one copy in all seven genomes (979).
+  - **C, DNA uniqueness.** The fraction of each primary chromosome made of 18-mers that occur once in the whole 7-genome set (65–92 %).
+- **Eligible genes:** routes A and B together give 6,939 genes. These are chromosomal, not pseudogenes, at least 300 bp long, and more than 5 kb from any mobile-element gene.
+- **Sequence-aware filter:** route C (dashed arrow) is applied here. It keeps 5,087 genes on the dnaA-bearing chromosome that have at least 150 bp of contiguous unique DNA and a single BLAST hit in their own genome.
+- **Design:** primer3 designed 1,076 primer + probe assays on 552 genes (40 core and 40 strain-unique genes per strain; amplicons 70–150 bp).
+- **Specificity:** 710 assays passed the exhaustive in-silico PCR against all replicons (bowtie1, up to 3 mismatches per primer).
+- **Multiplex selection:** the best 6 genes per strain (42 assays) gave 279,936 seven-way combinations, each scored on oligo heterodimer ΔG.
+- **Final set** (orange box): the selected 7-plex.
+
+### Figure 2. Position of the targets on the chromosomes
+
+![Figure 2](primer_design/figures/fig2_chromosome_maps.png)
+
+**Figure 2. Map of the primary (dnaA-bearing) chromosome of each strain.** Each circle is one chromosome, drawn clockwise. The replication origin, taken as the position of *dnaA* (black triangle, "ori"), is at the top; the predicted terminus ("ter") is at the bottom, diametrically opposite. The centre gives the strain, the species (current NCBI name) and the chromosome length.
+- **Outer ring:** the fraction of positions in each 10 kb bin that are unique, meaning every 18-mer covering them occurs exactly once across all seven genomes, plasmids included. The scale runs from light blue (0) to dark blue (1). Pale segments are sequence that is repeated in the genome or shared with another strain.
+- **Grey shaded sectors:** the mid-replichore zone on both replication arms (`rel_ori` 0.3–0.7, where 0 is the origin and 1 the terminus). Targets were preferentially taken here, so that all seven have a similar copy number per genome in growing cells.
+- **Grey ticks:** every assay that passed the in-silico specificity check.
+- **Orange bar and dot:** the assay chosen for the final 7-plex. Its target gene, or its locus-tag number when the gene has no symbol, is written below each map with its `rel_ori`.
+- **AA2:** only the dnaA chromosome (NZ_CP018780.1, 2.39 Mb) is shown. Its two other chromosomes and its plasmid were excluded as targets.
+
+### Figure 3. In-silico specificity of the final assays
+
+![Figure 3](primer_design/figures/fig3_specificity.png)
+
+**Figure 3. Specificity of the seven final assays against the seven genomes (all replicons).**
+- **(A) In-silico PCR per assay.** Rows are assays and columns are genomes.
+  - A blue cell means the assay's primer pair gives a product in that genome; the number is the product length. Each assay gives exactly one product, in its own genome, with perfectly matching primers.
+  - A grey cell means no product. Its number is the smallest number of mismatches of any binding site of that assay's forward or reverse primer in that genome, from an exhaustive search of sites with up to 3 mismatches. "≥4" means no site with 3 or fewer mismatches exists.
+  - No pair of such sites lies within 3 kb in the right orientation, so no off-target product is predicted.
+  - The single "2" is an isolated site of the AA1 forward primer (18 nt) in the AA7 genome. Its mismatches are at positions 13 and 15, so one of them is in the last five 3′ bases. No partner primer site lies nearby, so it cannot form a product.
+- **(B) Knock-out test with the 14 pooled primers.** Rows are the genome whose target amplicon was masked, and columns are assays. Blue means the product is still formed. A hatched orange cell ("lost") means it is no longer formed. Only the masked target is lost in each row, so no assay has a hidden alternative priming site and no assay depends on another strain's genome.
+
+### Figure 4. Compatibility of the assays in a multiplex
+
+![Figure 4](primer_design/figures/fig4_multiplex_compatibility.png)
+
+**Figure 4. Predicted interactions between the oligos of the final 7-plex.**
+- **(A) Heterodimer ΔG for every pair of the 21 oligos** (F = forward primer, R = reverse primer, P = probe). Values come from primer3 at 37 °C, 50 mM monovalent cations, 3.8 mM Mg²⁺, 0.8 mM dNTPs and 800 nM oligo.
+  - Darker blue means a more stable, less desirable dimer. The scale is clipped at −10 kcal/mol.
+  - Oligos are ordered by the proposed two-well split. The thick black lines separate well W1 (AA2, AA3, AA4, AA5) from well W2 (AA1, AA6, AA7).
+  - Dotted squares on the diagonal enclose the oligos of one assay (within-assay pairs). The diagonal cells are self-dimers.
+  - The orange box marks the strongest interaction between two different assays: AA3 forward primer with AA7 probe, −5.6 kcal/mol.
+- **(B) All 279,936 candidate 7-plexes.** Each is one assay per strain, taken from the 6 best genes per strain. They are binned by their worst (most negative) between-assay heterodimer ΔG, in 0.25 kcal/mol bins. The orange line is the selected combination (−5.64 kcal/mol), which has the weakest worst-case interaction of all the candidates.
 
 ## Review follow-up
 
