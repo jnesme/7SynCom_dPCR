@@ -22,7 +22,8 @@ for f in work/*; do
     case "$b" in final.*|pool*|fig3.*|combination_scores.tsv) continue ;; esac
     [ -e "strict/work/$b" ] || ln -s "../../work/$b" "strict/work/$b"
 done
-cp "${SRC}/final_multiplex.tsv" "${SRC}/candidates_pool.tsv" "${SRC}/specificity_report.tsv" strict/results/
+cp "${SRC}/final_multiplex.tsv" "${SRC}/candidates_pool.tsv" "${SRC}/candidates_pool_wide.tsv" \
+   "${SRC}/specificity_report.tsv" strict/results/
 cp "${SRC}/combination_scores.tsv" strict/work/
 # the Python table has an empty first header cell; the R script expects "oligo"
 sed '1s/^/oligo/' "${SRC}/dimer_matrix.tsv" > strict/results/dimer_matrix.tsv

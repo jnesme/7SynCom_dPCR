@@ -82,4 +82,4 @@ bash ../run_strict_addon.sh        # Python: select and verify the add-on set (a
 bash run_addon_figures_R.sh        # R: Figures 2-4 of that set (2-3 min)
 ```
 
-`run_addon_figures_R.sh` copies the add-on results into `strict/results/`, links the R intermediate files into `strict/work/`, and runs the unmodified `scripts/07_figures.R` from `strict/`. The figures are written to `strict/figures/` (`fig2_chromosome_maps_R`, `fig3_specificity_R`, `fig4_multiplex_compatibility_R`). In Figure 4B the histogram covers the combinations of a reduced pool of 6 genes per strain, not the full wide pool the add-on searched.
+`run_addon_figures_R.sh` copies the add-on results into `strict/results/`, links the R intermediate files into `strict/work/`, and runs the unmodified `scripts/07_figures.R` from `strict/`. The figures are written to `strict/figures/` (`fig2_chromosome_maps_R`, `fig3_specificity_R`, `fig4_multiplex_compatibility_R`). Figure 4B is titled "Reduced pool only": its histogram covers the combinations of a reduced pool of 6 genes per strain, not the full wide pool the add-on searched.

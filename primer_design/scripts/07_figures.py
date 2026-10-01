@@ -80,6 +80,11 @@ for s in S:
     uniq_pct[s] = 100 * m.mean()
 n_combo = int(np.prod(pool.groupby("strain").size().values))
 
+# worst heterodimer dG between oligos of two different assays, from the step-05 matrix
+_dm = pd.read_csv(os.path.join(RES, "dimer_matrix.tsv"), sep="\t", index_col=0)
+_other = np.array([[a.split("_")[0] != b.split("_")[0] for b in _dm.columns] for a in _dm.index])
+worst_between_txt = f"{_dm.values[_other].min():.2f}".replace("-", "−")
+
 steps = [
     ("7 complete genomes (PRJNA357031), RefSeq PGAP annotation",
      f"{len(cds):,} CDS  ·  {reps.role.eq('Chromosome').sum()} chromosomes, {reps.role.eq('Plasmid').sum()} plasmids", None),
@@ -95,7 +100,7 @@ steps = [
     ("Multiplex selection",
      f"{len(pool)} assays (top 6 genes per strain)  →  {n_combo:,} 7-way combinations scored on heterodimer ΔG", None),
     ("Final 7-plex, verified in silico",
-     "pooled in-silico PCR: exactly 7 products  ·  knock-out 7/7  ·  worst between-assay ΔG −5.6 kcal/mol", "final"),
+     f"pooled in-silico PCR: exactly 7 products  ·  knock-out 7/7  ·  worst between-assay ΔG {worst_between_txt} kcal/mol", "final"),
 ]
 
 fig, ax = plt.subplots(figsize=(7.2, 7.6))
@@ -358,7 +363,8 @@ cbar.set_ticks([0, 2, 4, 6, 8, 10]); cbar.set_ticklabels(["0", "−2", "−4", "
 cbar.set_label("heterodimer ΔG (kcal/mol, 37 °C)", fontsize=7)
 cbar.outline.set_visible(False)
 panel_letter(a1, "A", x=-0.02, y=1.045)
-a1.text(0.0, -0.19, f"orange box: strongest between-assay pair ({ol[wi][0]} × {ol[wj][0]}, {M[wi, wj]:.1f} kcal/mol); ".replace("-", "−")
+a1.text(0.0, -0.19, f"orange box: strongest between-assay pair ({ol[wi][0]} × {ol[wj][0]}, "
+        + f"{M[wi, wj]:.2f}".replace("-", "−") + " kcal/mol); "
         + "dotted squares: within-assay oligos", transform=a1.transAxes, fontsize=6.2, color=INK2)
 
 bins = np.arange(np.floor(worst.min()), 0.01, 0.25)
@@ -371,6 +377,11 @@ a2.set_ylabel("combinations")
 a2.spines[["top", "right"]].set_visible(False)
 a2.grid(axis="y", color=GRID, lw=0.6); a2.set_axisbelow(True)
 a2.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v / 1000:.0f}k" if v else "0"))
-a2.set_title(f"All {len(worst):,}\ncandidate 7-plexes", loc="left", fontsize=8.5)
+# the add-on set (results folder with candidates_pool_wide.tsv) was chosen from a much wider
+# pool than the one enumerated here, so the title must not claim "all" candidates
+if os.path.exists(os.path.join(RES, "candidates_pool_wide.tsv")):
+    a2.set_title(f"Reduced pool only: {len(worst):,}\n7-plexes (6 genes per strain)", loc="left", fontsize=8.5)
+else:
+    a2.set_title(f"All {len(worst):,}\ncandidate 7-plexes", loc="left", fontsize=8.5)
 panel_letter(a2, "B", x=-0.2, y=1.1)
 save(fig, "fig4_multiplex_compatibility")

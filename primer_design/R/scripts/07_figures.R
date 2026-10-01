@@ -52,7 +52,7 @@ steps <- tribble(
   10,   "7 complete genomes (PRJNA357031), RefSeq annotation",
         sprintf("%s CDS  ·  %d chromosomes, %d plasmids", fmt(nrow(cds)), sum(reps$role == "Chromosome"), sum(reps$role == "Plasmid")),
   6.2,  "Eligible candidate genes",
-        sprintf("%s genes  ·  route A or B, chromosomal, not pseudo, >= 5 kb from mobile elements, >= 300 bp", fmt(nrow(eligible))),
+        sprintf("%s genes  ·  route A or B, chromosomal, not pseudo, > 5 kb from mobile elements, >= 300 bp", fmt(nrow(eligible))),
   5.0,  "Sequence-aware filter: unique DNA + single copy",
         sprintf("%s genes on the dnaA chromosome  ·  >= 150 bp of unique 18-mers, one BLAST hit in own genome", fmt(nrow(cand_primary))),
   3.8,  "Primer / probe design (primer3)",
@@ -62,7 +62,7 @@ steps <- tribble(
   1.4,  "Multiplex selection",
         sprintf("%d assays (top 6 genes per strain)  ->  %s 7-plex combinations scored on dimer dG", nrow(pool), fmt(n_combos)),
   0.2,  "Final 7-plex, verified in silico",
-        sprintf("pooled PCR gives exactly 7 products  ·  knock-out test 7/7  ·  worst between-assay dG %.1f kcal/mol", scores$worst_any[1])
+        sprintf("pooled PCR gives exactly 7 products  ·  knock-out test 7/7  ·  worst between-assay dG %.2f kcal/mol", scores$worst_any[1])
 ) |> mutate(final = row_number() == n())
 
 routes <- tibble(
@@ -237,7 +237,7 @@ p4a <- ggplot(dl, aes(partner, oligo, fill = pmax(dg, -10))) +
   scale_x_discrete(labels = nice) + scale_y_discrete(limits = rev, labels = nice) +
   coord_equal() +
   labs(x = NULL, y = NULL, title = "A  Oligo interactions in the final pool",
-       subtitle = sprintf("black lines: wells W1 | W2; diagonal blocks: oligos of the same assay\norange: strongest between-assay pair (%s x %s, %.1f kcal/mol)",
+       subtitle = sprintf("black lines: wells W1 | W2; diagonal blocks: oligos of the same assay\norange: strongest between-assay pair (%s x %s, %.2f kcal/mol)",
                           nice(worst_pair$oligo), nice(worst_pair$partner), worst_pair$dg)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 5.5),
         axis.text.y = element_text(size = 5.5), plot.subtitle = element_text(size = 6.5, colour = INK2),
@@ -252,7 +252,11 @@ p4b <- ggplot(scores, aes(worst_any)) +
   scale_y_continuous(labels = \(v) if_else(v == 0, "0", paste0(v / 1000, "k")), expand = expansion(c(0, 0.05))) +
   scale_x_continuous(expand = expansion(add = c(0.3, 0.4))) +
   labs(x = "worst between-assay dG (kcal/mol)", y = "7-plex combinations",
-       title = sprintf("B  All %s candidate 7-plexes", fmt(nrow(scores)))) +
+       # the add-on set (results folder with candidates_pool_wide.tsv) was chosen from a much
+       # wider pool than the one enumerated here, so the title must not claim "all" candidates
+       title = if (file.exists(file.path(RES, "candidates_pool_wide.tsv")))
+         sprintf("B  Reduced pool only\n    %s 7-plexes\n    (6 genes per strain)", fmt(nrow(scores)))
+       else sprintf("B  All %s candidate 7-plexes", fmt(nrow(scores)))) +
   theme(panel.grid.major.y = element_line(colour = GRID, linewidth = 0.3), axis.line.x = element_line(colour = MUTED))
 
 p4 <- p4a + p4b + plot_layout(widths = c(1.35, 1))

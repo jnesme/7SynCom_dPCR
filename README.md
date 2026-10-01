@@ -217,7 +217,7 @@ Oligos of the add-on set (5′→3′; also in `primer_design/strict/results/oli
 | AA7_BUQ73_RS05825_R | AA7 | R | `CTTGATCCGTTTGAATGTCA` | 20 | 60.1 | 40.0 |
 | AA7_BUQ73_RS05825_P | AA7 | probe | `CATCCACGACACCAGAATGCTACG` | 24 | 68.5 | 54.2 |
 
-Figure 4 for this set (`strict/figures/fig4_multiplex_compatibility.png`). Panel B compares the chosen set with the combinations of a reduced pool of 6 genes per strain, not with the full wide pool:
+Figure 4 for this set (`strict/figures/fig4_multiplex_compatibility.png`). Panel B is titled "Reduced pool only": it compares the chosen set with the 279,936 combinations of a reduced pool (the chosen assay plus the 5 best-ranked other genes per strain), not with the full wide pool the add-on searched:
 
 ![Figure 4, add-on set](primer_design/strict/figures/fig4_multiplex_compatibility.png)
 
@@ -278,7 +278,7 @@ The figures are in `primer_design/figures/` as PNG (300 dpi) and PDF. `primer_de
   - Darker blue means a more stable, less desirable dimer. The scale is clipped at −10 kcal/mol.
   - Oligos are ordered by the proposed two-well split. The thick black lines separate well W1 (AA1, AA2, AA4, AA6) from well W2 (AA3, AA5, AA7).
   - Dotted squares on the diagonal enclose the oligos of one assay (within-assay pairs). The diagonal cells are self-dimers.
-  - The orange box marks the strongest interaction between two different assays: AA5 reverse primer with AA4 reverse primer, −5.6 kcal/mol.
+  - The orange box marks the strongest interaction between two different assays: AA5 reverse primer with AA4 reverse primer, −5.64 kcal/mol.
 - **(B) All 279,936 candidate 7-plexes.** Each is one assay per strain, taken from the 6 best genes per strain. They are binned by their worst (most negative) between-assay heterodimer ΔG, in 0.25 kcal/mol bins. The orange line is the selected combination (−5.64 kcal/mol), which has the weakest worst-case interaction of all the candidates.
 
 ## Review follow-up
