@@ -70,3 +70,16 @@ Scripts must be run from `primer_design/R/`, because every path is relative to i
 | Specificity | identical pass counts per strain |
 | Final 7-plex | same 7 assays, same ΔG (−5.64 / −4.17 kcal/mol), same 4 + 3 split |
 | `verification.txt`, `oligos.tsv`, `amplicons.fasta` | same content; `amplicons.fasta` byte-identical, the other two differ only in formatting (column spacing; `40` vs `40.0`) |
+
+## Low-dimer add-on: figures only
+
+The low-dimer add-on (an alternative 7-plex that minimises the strongest dimer of any kind, see the main README) is selected by the Python script `../scripts/08_strict_dimer_addon.py`. The selection was not translated to R: it needs about 165,000 dimer ΔG values, and calling `ntthal` once per pair took more than 2 hours on 16 cores.
+
+The R side only draws its figures:
+
+```bash
+bash ../run_strict_addon.sh        # Python: select and verify the add-on set (about 2 min)
+bash run_addon_figures_R.sh        # R: Figures 2-4 of that set (2-3 min)
+```
+
+`run_addon_figures_R.sh` copies the add-on results into `strict/results/`, links the R intermediate files into `strict/work/`, and runs the unmodified `scripts/07_figures.R` from `strict/`. The figures are written to `strict/figures/` (`fig2_chromosome_maps_R`, `fig3_specificity_R`, `fig4_multiplex_compatibility_R`). In Figure 4B the histogram covers the combinations of a reduced pool of 6 genes per strain, not the full wide pool the add-on searched.

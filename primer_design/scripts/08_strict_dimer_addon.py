@@ -168,6 +168,13 @@ small = pd.concat([sel.drop(columns=["species_NCBI", "well_4plus3"]),
                    pool.drop(index=sel.index).groupby("strain").head(5)]).sort_values("strain")
 small.to_csv(os.path.join(RES, "candidates_pool.tsv"), sep="\t", index=False)
 pool.to_csv(os.path.join(RES, "candidates_pool_wide.tsv"), sep="\t", index=False)
+# worst between-assay dG of every combination of that reduced pool, chosen set first
+# (read by the R figure script, see R/run_addon_figures_R.sh)
+grp = [list(small.index[small.strain == s]) for s in strains]
+sc = pd.DataFrame([(min(BETW[i, j] for i, j in itertools.combinations(cb, 2)), set(cb) == set(c))
+                   for cb in itertools.product(*grp)], columns=["worst_any", "chosen"])
+sc.sort_values(["chosen", "worst_any"], ascending=False).to_csv(
+    os.path.join(RES, "combination_scores.tsv"), sep="\t", index=False)
 ok.to_csv(os.path.join(RES, "candidates_all.tsv"), sep="\t", index=False)
 
 ol = [(f"{r.strain}_{role}", getattr(r, role)) for r in sel.itertuples() for role in ("fwd", "rev", "probe")]

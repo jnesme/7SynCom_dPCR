@@ -19,3 +19,9 @@ primer_design/R/logs/
 # strict-dimer add-on: intermediate files
 primer_design/strict/work/
 !primer_design/strict/figures/*.pdf
+
+# strict-dimer add-on (R): intermediate files
+primer_design/R/strict/work/
+!primer_design/R/strict/figures/*.pdf
+primer_design/R/strict/results/
+primer_design/strict/results/combination_scores.tsv

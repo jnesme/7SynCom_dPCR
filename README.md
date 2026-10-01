@@ -155,7 +155,8 @@ The standard selection (step 05) only minimises dimers between different assays,
 
 - **Run:** `bash primer_design/run_strict_addon.sh` (about 2 min on one core; needs steps 00–04).
 - **Script:** `scripts/08_strict_dimer_addon.py`. Steps 06 and 07 are reused unmodified through symlinks in `strict/scripts/`.
-- **Outputs:** `strict/results/` (same files as `results/`, plus `candidates_pool_wide.tsv`) and `strict/figures/` (Figures 2–4 for this set).
+- **Outputs:** `strict/results/` (same files as `results/`, plus `candidates_pool_wide.tsv` and `combination_scores.tsv`) and `strict/figures/` (Figures 2–4 for this set).
+- **R figures:** `bash primer_design/R/run_addon_figures_R.sh` redraws Figures 2–4 of this set with the R figure script, into `R/strict/figures/`.
 
 How it differs from step 05:
 - **Pool:** up to 40 strain-unique genes per strain (13–39 available), not 6. For each gene it keeps the assay with the weakest within-assay dimer.
@@ -222,7 +223,7 @@ Figure 4 for this set (`strict/figures/fig4_multiplex_compatibility.png`). Panel
 
 ## R version (teaching copy)
 
-`primer_design/R/` holds an R / tidyverse translation of the whole pipeline (steps 00–07), with its own conda env (`dpcr-design-r`), LSF submit script, results and figures. It selects the same 7 assays and gives the same verification results as the standard Python version. The low-dimer add-on exists in Python only. See `primer_design/R/README.md`.
+`primer_design/R/` holds an R / tidyverse translation of the whole pipeline (steps 00–07), with its own conda env (`dpcr-design-r`), LSF submit script, results and figures. It selects the same 7 assays and gives the same verification results as the standard Python version. The low-dimer add-on selection exists in Python only; `R/run_addon_figures_R.sh` draws its Figures 2–4 in R (`R/strict/figures/`). See `primer_design/R/README.md`.
 
 ## Figures
 
