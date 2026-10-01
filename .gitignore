@@ -15,3 +15,7 @@ primer_design/R/work/
 primer_design/R/logs/
 !primer_design/figures/*.pdf
 !primer_design/R/figures/*.pdf
+
+# strict-dimer add-on: intermediate files
+primer_design/strict/work/
+!primer_design/strict/figures/*.pdf

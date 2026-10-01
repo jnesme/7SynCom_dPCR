@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """Choose one set per strain that is mutually compatible for multiplexing.
 
-Pool = best set per gene among specificity-passing sets (mid-replichore first, then
-route class, fewest 3-mismatch background sites, primer3 penalty); top N genes per strain.
+Pool = best set per gene among specificity-passing sets (strain-unique by homology first,
+then mid-replichore, route class, fewest 3-mismatch background sites, primer3 penalty); top N genes per strain.
 Pairwise interactions between sets (primer3 thermodynamics, design buffer, 37 C):
   any-dimer dG between every oligo pair of two different sets (primers + probes),
   3'-anchored dG where the extendable 3' end is a primer (probes are 3'-blocked).
@@ -33,14 +33,19 @@ rc = str.maketrans("ACGT", "TGCA")
 
 rep = pd.read_csv(os.path.join(RES, "specificity_report.tsv"), sep="\t")
 ok = rep[rep["pass"]]
+# first criterion: strain-unique by homology. A strain's pool is drawn only from such
+# genes whenever at least one of its assays on them passed; then mid-replichore, route class,
+# fewest 3-mismatch background sites, primer3 penalty.
+ok = ok[ok.hom_unique | ~ok.strain.isin(ok.strain[ok.hom_unique])]
 ok = ok.assign(mid=ok.rel_ori.between(0.3, 0.7)).sort_values(
-    ["strain", "mid", "class_rank", "n_3mm_sites", "penalty"], ascending=[True, False, True, True, True])
+    ["strain", "hom_unique", "mid", "class_rank", "n_3mm_sites", "penalty"],
+    ascending=[True, False, False, True, True, True])
 missing = sorted(set(rep.strain) - set(ok.strain))
 if missing:
     raise SystemExit(f"no specificity-passing set for {missing}; relax design or add fallback loci")
 pool = ok.groupby(["strain", "locus_tag"], sort=False).head(1).groupby("strain").head(N_PER_STRAIN).reset_index(drop=True)
 strains = sorted(pool.strain.unique())
-print(pool.groupby("strain").agg(n=("set_id", "size"), mid_replichore=("mid", "sum")))
+print(pool.groupby("strain").agg(n=("set_id", "size"), hom_unique=("hom_unique", "sum"), mid_replichore=("mid", "sum")))
 
 oligos = {i: [("fwd", r.fwd), ("rev", r.rev), ("probe", r.probe)] for i, r in pool.iterrows()}
 dg_cache, end_cache = {}, {}

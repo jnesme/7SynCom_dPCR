@@ -1,22 +1,22 @@
 name	strain	species	role	sequence_5to3	length	tm	gc	well_4plus3
-AA1_BTU49_RS02115_F	AA1	Stenotrophomonas maltophilia	forward primer	AAGAAGCCCATCGAAGTT	18	60.4	44.4	W2
-AA1_BTU49_RS02115_R	AA1	Stenotrophomonas maltophilia	reverse primer	ACACCCTCGATTTCATAGAT	20	59.9	40.0	W2
-AA1_BTU49_RS02115_P	AA1	Stenotrophomonas maltophilia	hydrolysis probe (5' dye / 3' quencher)	CCCAGTATTCCACGTTGCCCTTAC	24	68.3	54.2	W2
-AA2_BUE85_RS12620_F	AA2	Brucella pituitosa	forward primer	CAATCCACGTTTTGTCATCA	20	60.7	40.0	W1
-AA2_BUE85_RS12620_R	AA2	Brucella pituitosa	reverse primer	GAAGCAGTGTGTAATATGGC	20	60.6	45.0	W1
-AA2_BUE85_RS12620_P	AA2	Brucella pituitosa	hydrolysis probe (5' dye / 3' quencher)	CGTACCGCCAAAGTTCCTCGAA	22	68.1	54.5	W1
-AA3_BUE88_RS14975_F	AA3	Curtobacterium pusillum	forward primer	TTGTAGTCCATAACGACCTT	20	60.0	40.0	W1
-AA3_BUE88_RS14975_R	AA3	Curtobacterium pusillum	reverse primer	CTGCATCTCTACAACTCGAT	20	60.9	45.0	W1
-AA3_BUE88_RS14975_P	AA3	Curtobacterium pusillum	hydrolysis probe (5' dye / 3' quencher)	CGGAATCGACGTCAAGACACTCAT	24	67.7	50.0	W1
-AA4_BUE86_RS06915_F	AA4	Enterobacter ludwigii	forward primer	GGTACATAAAGTGCTCCATG	20	59.9	45.0	W1
-AA4_BUE86_RS06915_R	AA4	Enterobacter ludwigii	reverse primer	CTAAATAATGAGCGCGAAGA	20	59.7	40.0	W1
-AA4_BUE86_RS06915_P	AA4	Enterobacter ludwigii	hydrolysis probe (5' dye / 3' quencher)	AGAGCGCGACCACTTAACCATG	22	68.2	54.5	W1
-AA5_BUE84_RS01130_F	AA5	Chryseobacterium indologenes	forward primer	GGAACGACTTGAAAATCTGT	20	60.0	40.0	W1
-AA5_BUE84_RS01130_R	AA5	Chryseobacterium indologenes	reverse primer	CAAGCCACGAATAACCATAA	20	59.9	40.0	W1
-AA5_BUE84_RS01130_P	AA5	Chryseobacterium indologenes	hydrolysis probe (5' dye / 3' quencher)	ACGCTAAAATTATATACTCTCTCCTGCCA	29	66.5	37.9	W1
-AA6_BUQ72_RS22945_F	AA6	Herbaspirillum robiniae	forward primer	TCGTCTCTCAAGGATTCTTT	20	60.0	40.0	W2
-AA6_BUQ72_RS22945_R	AA6	Herbaspirillum robiniae	reverse primer	TTACCGGAACAAGAAGATCT	20	60.0	40.0	W2
-AA6_BUQ72_RS22945_P	AA6	Herbaspirillum robiniae	hydrolysis probe (5' dye / 3' quencher)	AACGTTGACTCTTTCTCCTCCGAC	24	67.4	50.0	W2
-AA7_BUQ73_RS07385_F	AA7	Pseudomonas putida	forward primer	GTATAACCATGCACTGTCTG	20	59.9	45.0	W2
-AA7_BUQ73_RS07385_R	AA7	Pseudomonas putida	reverse primer	GGAAATTCCCCATGTGTTTA	20	59.7	40.0	W2
-AA7_BUQ73_RS07385_P	AA7	Pseudomonas putida	hydrolysis probe (5' dye / 3' quencher)	TTGTGCAGTGTGACCAAGGACTTC	24	68.4	50.0	W2
+AA1_BTU49_RS14340_F	AA1	Stenotrophomonas maltophilia	forward primer	ATAGTAGTTGAGACCGAAGC	20	60.5	45.0	W1
+AA1_BTU49_RS14340_R	AA1	Stenotrophomonas maltophilia	reverse primer	ATCTTCGATGACTTTCCCAA	20	60.7	40.0	W1
+AA1_BTU49_RS14340_P	AA1	Stenotrophomonas maltophilia	hydrolysis probe (5' dye / 3' quencher)	CTTGTTTCATTGGACGCTGGATCC	24	67.3	50.0	W1
+AA2_BUE85_RS08015_F	AA2	Brucella pituitosa	forward primer	CTTGGTTATCCCTGGTATGT	20	60.5	45.0	W1
+AA2_BUE85_RS08015_R	AA2	Brucella pituitosa	reverse primer	CTGCATCAAGGAAAATACGT	20	60.2	40.0	W1
+AA2_BUE85_RS08015_P	AA2	Brucella pituitosa	hydrolysis probe (5' dye / 3' quencher)	CCACCCTGACGACTTTCCAGAATT	24	67.8	50.0	W1
+AA3_BUE88_RS07895_F	AA3	Curtobacterium pusillum	forward primer	CGATCATGGAACTCTGGATA	20	60.3	45.0	W2
+AA3_BUE88_RS07895_R	AA3	Curtobacterium pusillum	reverse primer	CGAAATACTACACACAACCC	20	60.2	45.0	W2
+AA3_BUE88_RS07895_P	AA3	Curtobacterium pusillum	hydrolysis probe (5' dye / 3' quencher)	CTGGTCGAGGAGCCTGTGGAAATC	24	69.9	58.3	W2
+AA4_BUE86_RS06930_F	AA4	Enterobacter ludwigii	forward primer	CGCGAATATGGCATTATTGA	20	60.5	40.0	W1
+AA4_BUE86_RS06930_R	AA4	Enterobacter ludwigii	reverse primer	GGGGAATCAAAGTTAACGTT	20	60.0	40.0	W1
+AA4_BUE86_RS06930_P	AA4	Enterobacter ludwigii	hydrolysis probe (5' dye / 3' quencher)	CCACTATGTAGACAGTTTCGCCCC	24	67.8	54.2	W1
+AA5_BUE84_RS12740_F	AA5	Chryseobacterium indologenes	forward primer	ATTCTCCCGTTCTCCTAATC	20	60.2	45.0	W2
+AA5_BUE84_RS12740_R	AA5	Chryseobacterium indologenes	reverse primer	ATCTCAATCCCCATTACCTT	20	59.8	40.0	W2
+AA5_BUE84_RS12740_P	AA5	Chryseobacterium indologenes	hydrolysis probe (5' dye / 3' quencher)	CCTGAATACGGGTTTCTCTGGTTTCT	26	67.4	46.2	W2
+AA6_BUQ72_RS24105_F	AA6	Herbaspirillum robiniae	forward primer	GGATTTTGCTACCACTGAAT	20	59.8	40.0	W1
+AA6_BUQ72_RS24105_R	AA6	Herbaspirillum robiniae	reverse primer	GACAAACAAGGAAGAGTACG	20	60.1	45.0	W1
+AA6_BUQ72_RS24105_P	AA6	Herbaspirillum robiniae	hydrolysis probe (5' dye / 3' quencher)	CAGTGTCGCCGAATCCTCCG	20	68.4	65.0	W1
+AA7_BUQ73_RS06845_F	AA7	Pseudomonas putida	forward primer	GTACCGGTAGAATCCAGTT	19	60.0	47.4	W2
+AA7_BUQ73_RS06845_R	AA7	Pseudomonas putida	reverse primer	GGTGAAAATCTTCTCGATCG	20	60.3	45.0	W2
+AA7_BUQ73_RS06845_P	AA7	Pseudomonas putida	hydrolysis probe (5' dye / 3' quencher)	CGCACTTCACCGACGAATTTCAGT	24	68.8	50.0	W2

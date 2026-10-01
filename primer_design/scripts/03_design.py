@@ -93,25 +93,27 @@ cand["mid_replichore"] = cand.rel_ori.between(0.3, 0.7)
 
 
 # route classes. Strain-unique genes (no homolog in the other 6 genomes) give the widest
-# specificity margin; core single-copy genes rely on SNPs within the oligos. Both are
-# designed (quota per strain) and step 04/05 decide.
+# specificity margin and always rank first; core single-copy genes rely on a few SNPs
+# within the oligos and are only a fallback. Both are designed (quota per strain).
 def class_rank(r):
     c, t = r["class"] if isinstance(r["class"], str) else "", r.text_class if isinstance(r.text_class, str) else ""
     if c == "A_unique" and t == "text_unique":
         return 0  # unique by both routes
-    if c == "B_universal_1to1" and t == "text_core_1x":
-        return 1  # core 1x by both routes
     if c == "A_unique":
-        return 2
+        return 1  # unique by homology (name not informative)
+    if c == "B_universal_1to1" and t == "text_core_1x":
+        return 2  # core 1x by both routes
     if c == "B_universal_1to1" or t == "text_core_1x":
         return 3
     return 4      # text_unique only (homology found a homolog elsewhere or a paralog)
 
 
 cand["class_rank"] = cand.apply(class_rank, axis=1)
-cand["group"] = np.where(cand.class_rank.isin([1, 3]), "core", "unique")
-cand = cand.sort_values(["strain", "mid_replichore", "class_rank", "uniq_run_len", "best_other_pident"],
-                        ascending=[True, False, True, False, True])
+# first criterion: strain-unique by homology (no homolog in the other 6 genomes, no paralog)
+cand["hom_unique"] = cand["class"] == "A_unique"
+cand["group"] = np.where(cand.class_rank.isin([2, 3]), "core", "unique")
+cand = cand.sort_values(["strain", "hom_unique", "mid_replichore", "class_rank", "uniq_run_len", "best_other_pident"],
+                        ascending=[True, False, False, True, False, True])
 
 out = []
 for s, g in cand.groupby("strain"):
@@ -144,7 +146,7 @@ for s, g in cand.groupby("strain"):
             amp = tmpl[amp_start:amp_end + 1]
             gstart = r.start + amp_start
             out.append(dict(
-                set_id=f"{s}_{r.locus_tag}_{k}", strain=s, route=r.route, class_rank=r.class_rank, group=r.group, rel_ori=round(r.rel_ori, 3), locus_tag=r.locus_tag,
+                set_id=f"{s}_{r.locus_tag}_{k}", strain=s, route=r.route, hom_unique=bool(r.hom_unique), class_rank=r.class_rank, group=r.group, rel_ori=round(r.rel_ori, 3), locus_tag=r.locus_tag,
                 gene=r.gene if isinstance(r.gene, str) else "", product=r["product"], seqid=r.seqid,
                 gene_start=r.start, gene_end=r.end, gene_strand=r.strand,
                 amp_start=gstart, amp_end=gstart + len(amp) - 1, amp_len=len(amp),

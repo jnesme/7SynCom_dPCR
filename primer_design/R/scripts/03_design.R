@@ -69,13 +69,17 @@ cand <- read_tsv(file.path(WORK, "candidates_genes.tsv")) |>
          rel_ori = pmin(dist, chrom_len - dist) / (chrom_len / 2),
          mid_replichore = between(rel_ori, 0.3, 0.7),
          class_rank = case_when(
+           # strain-unique genes (no homolog in the other 6) always rank first;
+           # core genes rely on a few SNPs in the oligos and are only a fallback
            class == "A_unique" & text_class == "text_unique"             ~ 0,  # unique by both routes
-           class == "B_universal_1to1" & text_class == "text_core_1x"    ~ 1,  # core by both routes
-           class == "A_unique"                                           ~ 2,
+           class == "A_unique"                                           ~ 1,  # unique by homology
+           class == "B_universal_1to1" & text_class == "text_core_1x"    ~ 2,  # core by both routes
            class == "B_universal_1to1" | text_class == "text_core_1x"    ~ 3,
            TRUE                                                          ~ 4), # text_unique only
-         group = if_else(class_rank %in% c(1, 3), "core", "unique")) |>
-  arrange(strain, desc(mid_replichore), class_rank, desc(uniq_run_len), best_other_pident)
+         group = if_else(class_rank %in% c(2, 3), "core", "unique"),
+         # first criterion: strain-unique by homology (no homolog in the other 6, no paralog)
+         hom_unique = coalesce(class == "A_unique", FALSE)) |>
+  arrange(strain, desc(hom_unique), desc(mid_replichore), class_rank, desc(uniq_run_len), best_other_pident)
 
 genome_gc <- tibble(chrom_id = names(chrom), gc = letterFrequency(chrom, "GC", as.prob = TRUE)[, 1],
                     len = width(chrom)) |>
@@ -135,7 +139,7 @@ for (s in unique(cand$strain)) {
       if (str_starts(pr$seq, "G")) next
       amp <- substr(r$template, left_start + 1, right_end + 1)
       designs[[length(designs) + 1]] <- tibble(
-        set_id = paste0(r$id, "_", k), strain = s, route = r$route, class_rank = r$class_rank,
+        set_id = paste0(r$id, "_", k), strain = s, route = r$route, hom_unique = r$hom_unique, class_rank = r$class_rank,
         group = r$group, rel_ori = round(r$rel_ori, 3), locus_tag = r$locus_tag,
         gene = replace_na(r$gene, ""), product = r$product, seqid = r$seqid,
         gene_start = r$start, gene_end = r$end, gene_strand = r$strand,

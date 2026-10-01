@@ -2,7 +2,7 @@
 
 This folder is a line-by-line **R / tidyverse** translation of the Python pipeline in `primer_design/scripts/`, made for teaching. The Python scripts are untouched. The R version writes only inside `primer_design/R/`: its own `work/`, `results/` and `figures/` (figure files end in `_R`).
 
-**It reproduces the Python results exactly:** the same 1,076 primer/probe designs, the same specificity table, the same final 7-plex, and the same `verification.txt` results (only the column spacing of its enzyme table differs). See *Validation* below.
+**It reproduces the Python results exactly:** the same 1,078 primer/probe designs, the same specificity table, the same final 7-plex, and the same `verification.txt` results (only the column spacing of its enzyme table differs). See *Validation* below.
 
 ## Setup and running
 
@@ -66,7 +66,7 @@ Scripts must be run from `primer_design/R/`, because every path is relative to i
 | CDS table / proteins | 33,170 / 32,804, identical |
 | Homology and text classes | identical counts per strain |
 | Unique fraction per chromosome, candidate genes | identical (5,412 genes; same unique-run lengths and BLAST counts) |
-| Designs | all 1,076 primer + probe sets identical (Tm within 0.0005 °C) |
+| Designs | all 1,078 primer + probe sets have identical sequences |
 | Specificity | identical pass counts per strain |
-| Final 7-plex | same 7 assays, same ΔG (−5.64 / −4.48 kcal/mol), same 4 + 3 split |
+| Final 7-plex | same 7 assays, same ΔG (−5.64 / −4.17 kcal/mol), same 4 + 3 split |
 | `verification.txt`, `oligos.tsv`, `amplicons.fasta` | same content; `amplicons.fasta` byte-identical, the other two differ only in formatting (column spacing; `40` vs `40.0`) |

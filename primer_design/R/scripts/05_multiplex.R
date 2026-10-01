@@ -16,9 +16,13 @@ PROBE_MIN_MM <- 5          # a probe needs >= 5 mismatches to every other amplic
 index <- file.path(WORK, "bt_all")
 
 report <- read_tsv(file.path(RES, "specificity_report.tsv"))
+# first criterion: strain-unique by homology. A strain's pool is drawn only from such
+# genes whenever at least one of its assays on them passed; then mid-replichore, route
+# class, fewest 3-mismatch background sites, primer3 penalty.
 ok <- report |> filter(pass) |>
+  group_by(strain) |> filter(hom_unique | !any(hom_unique)) |> ungroup() |>
   mutate(mid = between(rel_ori, 0.3, 0.7)) |>
-  arrange(strain, desc(mid), class_rank, n_3mm_sites, penalty)
+  arrange(strain, desc(hom_unique), desc(mid), class_rank, n_3mm_sites, penalty)
 missing <- setdiff(unique(report$strain), ok$strain)
 if (length(missing) > 0) stop("no specificity-passing set for ", paste(missing, collapse = ", "))
 

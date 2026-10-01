@@ -4,21 +4,51 @@ Goal: design primer + hydrolysis-probe sets that can be multiplexed in **digital
 
 Reference: Niu B, Paulson JN, Zheng X, Kolter R (2017). *Simplified and representative bacterial community of maize roots.* PNAS 114:E2450–E2459. Genomes: BioProject **PRJNA357031**.
 
-## Status (2026-09-30): design complete and verified in silico
+## Status (2026-10-01): design complete and verified in silico
 
-The seven assays are in `primer_design/results/oligos.tsv` (order sheet) and `final_multiplex.tsv` (all details).
+The seven assays are in `primer_design/results/oligos.tsv` (order sheet) and `final_multiplex.tsv` (all details). This set replaces the first one (repository history up to commit `08c73d3`), in which AA1 targeted the core gene *rplP*. Strain-uniqueness by homology is now the first selection criterion, so every target is a gene with no homolog in the other six genomes.
 
 | Strain | Species (NCBI) | Target locus | Product | Route | rel_ori | Amplicon | Well (4+3) |
 |---|---|---|---|---|---|---|---|
-| AA1 | *S. maltophilia* | BTU49_RS02115 *rplP* | 50S ribosomal protein L16 | core 1:1, both routes | 0.39 | 101 bp | W2 |
-| AA2 | *B. pituitosa* | BUE85_RS12620 *chpT* | histidine phosphotransferase ChpT | unique, both routes | 0.64 | 134 bp | W1 |
-| AA3 | *C. pusillum* | BUE88_RS14975 | hypothetical protein | unique (homology only) | 0.37 | 143 bp | W1 |
-| AA4 | *E. ludwigii* | BUE86_RS06915 | ATP-dependent endonuclease | unique, both routes | 0.65 | 76 bp | W1 |
-| AA5 | *C. indologenes* | BUE84_RS01130 *bshC* | BshC | unique, both routes | 0.56 | 107 bp | W1 |
-| AA6 | *H. robiniae* | BUQ72_RS22945 | AAA ATPase | unique, both routes | 0.58 | 88 bp | W2 |
-| AA7 | *P. putida* | BUQ73_RS07385 | M14 carboxypeptidase | unique, both routes | 0.63 | 135 bp | W2 |
+| AA1 | *S. maltophilia* | BTU49_RS14340 | tetratricopeptide repeat protein | unique (homology) | 0.46 | 150 bp | W1 |
+| AA2 | *B. pituitosa* | BUE85_RS08015 *bspB* | type IV secretion system effector BspB | unique, both routes | 0.58 | 145 bp | W1 |
+| AA3 | *C. pusillum* | BUE88_RS07895 | DUF6507 family protein | unique (homology) | 0.37 | 77 bp | W2 |
+| AA4 | *E. ludwigii* | BUE86_RS06930 *hcp* | hydroxylamine reductase | unique, both routes | 0.65 | 89 bp | W1 |
+| AA5 | *C. indologenes* | BUE84_RS12740 *pepE* | dipeptidase PepE | unique, both routes | 0.40 | 147 bp | W2 |
+| AA6 | *H. robiniae* | BUQ72_RS24105 | hypothetical protein | unique (homology) | 0.67 | 106 bp | W1 |
+| AA7 | *P. putida* | BUQ73_RS06845 *rssC* | anti-sigma factor antagonist RssC | unique, both routes | 0.59 | 116 bp | W2 |
 
 `rel_ori` is the target's distance from the replication origin (dnaA): 0 = origin, 1 = terminus. All seven targets are mid-replichore (0.3–0.7).
+
+### Why these targets
+
+Every target had to pass the same filters:
+- it is on the dnaA chromosome;
+- it is not a pseudogene, and not within 5 kb of a mobile-element gene;
+- it has at least 150 bp of DNA found nowhere else in the 7 genomes;
+- it gives a single BLAST hit in its own genome;
+- its assay gives exactly one in-silico PCR product, with no near-perfect off-target primer site.
+
+Each strain's six best genes were then ranked in this order:
+1. **Strain-unique by homology**: no homolog in the other six genomes and no paralog. This criterion is strict: genes with homologs elsewhere are used only if a strain has no passing unique gene, which happened for none.
+2. Mid-replichore position (`rel_ori` 0.3–0.7).
+3. Uniqueness also supported by the GFF text route.
+4. Fewest 3-mismatch background primer sites.
+5. Primer3 design-quality penalty (lower is better).
+
+The final seven are the combination, out of 279,936, with the weakest worst-case interaction between the oligos of different assays. This is why a target is not always its strain's rank 1.
+
+| Strain | Target | Rank in top 6 | Unique DNA stretch | Closest off-target primer site | Reasoning |
+|---|---|---|---|---|---|
+| AA1 | BTU49_RS14340 (TPR protein) | 6 | 394 bp | 3 mismatches | Replaces *rplP*, which had homologs in all six other genomes. AA1 has no gene that is unique by both routes with a passing assay, so its pool is unique by homology only. |
+| AA2 | *bspB* | 1 | 556 bp | 3 mismatches | The top-ranked AA2 candidate. AA2 is the only alphaproteobacterium in the set. The gene is a type IV secretion effector, a class that can sit in horizontally acquired regions, but it is not near an annotated mobile element. |
+| AA3 | BUE88_RS07895 (DUF6507) | 1 | 188 bp | 3 mismatches | The top-ranked AA3 candidate. AA3 has the fewest options (17 passing assays on unique genes) and no named unique gene. |
+| AA4 | *hcp* | 4 | 807 bp | 3 mismatches | A named metabolic gene, unique by both routes. It replaces the earlier endonuclease target, which belonged to a gene family often found in defence islands. |
+| AA5 | *pepE* | 4 | 293 bp | 3 mismatches | A named gene, unique by both routes. AA5 is the only Bacteroidetes in the set. |
+| AA6 | BUQ72_RS24105 (hypothetical) | 5 | 228 bp | 3 mismatches | Unique by homology. No function is known, so its stability across isolates cannot be judged from annotation. |
+| AA7 | *rssC* | 3 | 228 bp | 3 mismatches | A named gene, unique by both routes. It has 12 background 3-mismatch primer sites, the most of the seven; none can form a product. |
+
+Trade-off: three of the seven targets (AA1, AA3, AA6) are poorly annotated genes. Strain-unique genes give the widest specificity margin, but they are more likely than core genes to be accessory DNA that a strain could lose. Confirm each target on the lab's own stock of the strain before relying on it.
 
 ### Oligos to order (best set, 21 oligos)
 
@@ -26,40 +56,41 @@ All sequences are 5′→3′. The same list is in `primer_design/results/oligos
 
 | Name | Strain | Type | Sequence (5′→3′) | nt | Tm °C | GC % |
 |---|---|---|---|---|---|---|
-| AA1_BTU49_RS02115_F | AA1 | F | `AAGAAGCCCATCGAAGTT` | 18 | 60.4 | 44.4 |
-| AA1_BTU49_RS02115_R | AA1 | R | `ACACCCTCGATTTCATAGAT` | 20 | 59.9 | 40.0 |
-| AA1_BTU49_RS02115_P | AA1 | probe | `CCCAGTATTCCACGTTGCCCTTAC` | 24 | 68.3 | 54.2 |
-| AA2_BUE85_RS12620_F | AA2 | F | `CAATCCACGTTTTGTCATCA` | 20 | 60.7 | 40.0 |
-| AA2_BUE85_RS12620_R | AA2 | R | `GAAGCAGTGTGTAATATGGC` | 20 | 60.6 | 45.0 |
-| AA2_BUE85_RS12620_P | AA2 | probe | `CGTACCGCCAAAGTTCCTCGAA` | 22 | 68.1 | 54.5 |
-| AA3_BUE88_RS14975_F | AA3 | F | `TTGTAGTCCATAACGACCTT` | 20 | 60.0 | 40.0 |
-| AA3_BUE88_RS14975_R | AA3 | R | `CTGCATCTCTACAACTCGAT` | 20 | 60.9 | 45.0 |
-| AA3_BUE88_RS14975_P | AA3 | probe | `CGGAATCGACGTCAAGACACTCAT` | 24 | 67.7 | 50.0 |
-| AA4_BUE86_RS06915_F | AA4 | F | `GGTACATAAAGTGCTCCATG` | 20 | 59.9 | 45.0 |
-| AA4_BUE86_RS06915_R | AA4 | R | `CTAAATAATGAGCGCGAAGA` | 20 | 59.7 | 40.0 |
-| AA4_BUE86_RS06915_P | AA4 | probe | `AGAGCGCGACCACTTAACCATG` | 22 | 68.2 | 54.5 |
-| AA5_BUE84_RS01130_F | AA5 | F | `GGAACGACTTGAAAATCTGT` | 20 | 60.0 | 40.0 |
-| AA5_BUE84_RS01130_R | AA5 | R | `CAAGCCACGAATAACCATAA` | 20 | 59.9 | 40.0 |
-| AA5_BUE84_RS01130_P | AA5 | probe | `ACGCTAAAATTATATACTCTCTCCTGCCA` | 29 | 66.5 | 37.9 |
-| AA6_BUQ72_RS22945_F | AA6 | F | `TCGTCTCTCAAGGATTCTTT` | 20 | 60.0 | 40.0 |
-| AA6_BUQ72_RS22945_R | AA6 | R | `TTACCGGAACAAGAAGATCT` | 20 | 60.0 | 40.0 |
-| AA6_BUQ72_RS22945_P | AA6 | probe | `AACGTTGACTCTTTCTCCTCCGAC` | 24 | 67.4 | 50.0 |
-| AA7_BUQ73_RS07385_F | AA7 | F | `GTATAACCATGCACTGTCTG` | 20 | 59.9 | 45.0 |
-| AA7_BUQ73_RS07385_R | AA7 | R | `GGAAATTCCCCATGTGTTTA` | 20 | 59.7 | 40.0 |
-| AA7_BUQ73_RS07385_P | AA7 | probe | `TTGTGCAGTGTGACCAAGGACTTC` | 24 | 68.4 | 50.0 |
+| AA1_BTU49_RS14340_F | AA1 | F | `ATAGTAGTTGAGACCGAAGC` | 20 | 60.5 | 45.0 |
+| AA1_BTU49_RS14340_R | AA1 | R | `ATCTTCGATGACTTTCCCAA` | 20 | 60.7 | 40.0 |
+| AA1_BTU49_RS14340_P | AA1 | probe | `CTTGTTTCATTGGACGCTGGATCC` | 24 | 67.3 | 50.0 |
+| AA2_BUE85_RS08015_F | AA2 | F | `CTTGGTTATCCCTGGTATGT` | 20 | 60.5 | 45.0 |
+| AA2_BUE85_RS08015_R | AA2 | R | `CTGCATCAAGGAAAATACGT` | 20 | 60.2 | 40.0 |
+| AA2_BUE85_RS08015_P | AA2 | probe | `CCACCCTGACGACTTTCCAGAATT` | 24 | 67.8 | 50.0 |
+| AA3_BUE88_RS07895_F | AA3 | F | `CGATCATGGAACTCTGGATA` | 20 | 60.3 | 45.0 |
+| AA3_BUE88_RS07895_R | AA3 | R | `CGAAATACTACACACAACCC` | 20 | 60.2 | 45.0 |
+| AA3_BUE88_RS07895_P | AA3 | probe | `CTGGTCGAGGAGCCTGTGGAAATC` | 24 | 69.9 | 58.3 |
+| AA4_BUE86_RS06930_F | AA4 | F | `CGCGAATATGGCATTATTGA` | 20 | 60.5 | 40.0 |
+| AA4_BUE86_RS06930_R | AA4 | R | `GGGGAATCAAAGTTAACGTT` | 20 | 60.0 | 40.0 |
+| AA4_BUE86_RS06930_P | AA4 | probe | `CCACTATGTAGACAGTTTCGCCCC` | 24 | 67.8 | 54.2 |
+| AA5_BUE84_RS12740_F | AA5 | F | `ATTCTCCCGTTCTCCTAATC` | 20 | 60.2 | 45.0 |
+| AA5_BUE84_RS12740_R | AA5 | R | `ATCTCAATCCCCATTACCTT` | 20 | 59.8 | 40.0 |
+| AA5_BUE84_RS12740_P | AA5 | probe | `CCTGAATACGGGTTTCTCTGGTTTCT` | 26 | 67.4 | 46.2 |
+| AA6_BUQ72_RS24105_F | AA6 | F | `GGATTTTGCTACCACTGAAT` | 20 | 59.8 | 40.0 |
+| AA6_BUQ72_RS24105_R | AA6 | R | `GACAAACAAGGAAGAGTACG` | 20 | 60.1 | 45.0 |
+| AA6_BUQ72_RS24105_P | AA6 | probe | `CAGTGTCGCCGAATCCTCCG` | 20 | 68.4 | 65.0 |
+| AA7_BUQ73_RS06845_F | AA7 | F | `GTACCGGTAGAATCCAGTT` | 19 | 60.0 | 47.4 |
+| AA7_BUQ73_RS06845_R | AA7 | R | `GGTGAAAATCTTCTCGATCG` | 20 | 60.3 | 45.0 |
+| AA7_BUQ73_RS06845_P | AA7 | probe | `CGCACTTCACCGACGAATTTCAGT` | 24 | 68.8 | 50.0 |
 
 - **Primers:** standard desalted.
-- **Probes:** hydrolysis probes with a 5′ reporter dye and a 3′ quencher. Choose the dyes once the platform and channel layout are set, following the W1/W2 grouping above. Double-quenched probes are advisable because several probes are ≥ 24 nt, and the AA5 probe is 29 nt.
+- **Probes:** hydrolysis probes with a 5′ reporter dye and a 3′ quencher. Choose the dyes once the platform and channel layout are set, following the W1/W2 grouping above. Double-quenched probes are advisable because six of the seven probes are ≥ 24 nt, and the AA5 probe is 26 nt.
 - **Quantification standards:** order the 7 amplicons with ±20 bp flanks as gBlocks, from `primer_design/results/amplicons.fasta`.
 - **Backups:** other assays per strain that passed all checks are in `primer_design/results/candidates_pool.tsv`.
 
 In-silico verification (`results/verification.txt`):
+- **Off-target primer sites:** no primer has a site with fewer than 3 mismatches anywhere outside its target.
 - **Pooled in-silico PCR:** all 14 primers, every primer combination, ≤ 3 mismatches, over the 7 full genomes including plasmids. Result: **exactly the 7 designed products** (all perfect matches).
 - **Knock-out test:** masking each target removes only that strain's product (7/7 PASS).
-- **Primer Tm:** 59.7–60.9 °C.
-- **Oligo interactions:** the worst interaction between two different sets is −5.64 kcal/mol (3′-anchored: −4.48). The worst oligo pair in the whole pool is −7.42 kcal/mol, which includes pairs within the same set.
+- **Primer Tm:** 59.8–60.7 °C.
+- **Oligo interactions:** the worst interaction between two different sets is −5.64 kcal/mol (3′-anchored: −4.17). Counting pairs within the same set, the worst is −6.60 kcal/mol, and the strongest self-dimer is −7.64 kcal/mol (AA7 forward primer). The [low-dimer add-on](#add-on-low-dimer-7-plex-primer_designstrict) is an alternative set whose worst pair of any kind is −4.85 kcal/mol.
 - **Probe cross-talk:** each probe has ≥ 5 mismatches to every other amplicon.
-- **Restriction enzymes** for fragmenting gDNA before dPCR that cut none of the 7 amplicons: **EcoRI, HindIII, PvuII, BamHI, BsaI, XbaI**. HaeIII and MspI cut 5 of the amplicons, so avoid them.
+- **Restriction enzymes** for fragmenting gDNA before dPCR that cut none of the 7 amplicons: **PvuII and XbaI** only. XbaI cuts these genomes rarely (median 36 sites per replicon), so PvuII (median 1,364) fragments better. EcoRI, HindIII, BamHI and BsaI each cut one amplicon.
 
 ## Genomes
 
@@ -98,7 +129,7 @@ In-silico verification (`results/verification.txt`):
 5. **03 design**: primer3 designs within the unique sequence only.
    - **Target location:** only the dnaA-bearing chromosome is used. This matters for AA2: its secondary chromosomes are not guaranteed to be present 1:1 with the primary one.
    - **Origin distance:** `rel_ori` = distance from dnaA, from 0 (origin) to 1 (terminus). Mid-replichore targets (0.3–0.7) are preferred, which limits the origin-to-terminus copy-number bias in growing cells.
-   - **Gene quota:** per strain, 40 core single-copy genes and 40 strain-unique genes. Rank order: unique by both routes, core by both routes, unique by homology only, core by one route, then text-unique only.
+   - **Gene quota:** per strain, 40 core single-copy genes and 40 strain-unique genes. Sort order: strain-unique by homology first, then mid-replichore, then route class (unique by both routes, unique by homology only, core by both routes, core by one route, text-unique only).
    - Amplicon 70–150 bp. Primers 18–25 nt, Tm 58–62 °C. Probe Tm 66–71 °C, on either strand, with no 5′ G.
    - Buffer: 50 mM K⁺, 3.8 mM Mg²⁺, 800 nM primers, 400 nM probe. Primer GC limits follow each genome's GC.
 6. **04 specificity**: `insilico_pcr.py` uses **bowtie1** (`-v 3 -a`) to list *every* binding site with ≤ 3 mismatches of every oligo on all 7 genomes, including plasmids. Any + site paired with a downstream − site counts as a product, including F+F and R+R.
@@ -107,6 +138,7 @@ In-silico verification (`results/verification.txt`):
    - Sites with 3 mismatches are random background (about 13 per primer in 36 Mb); they are only counted and used for ranking.
    - *Note:* `seqkit amplicon` was used first but was dropped. With mismatches allowed it returns only one (the longest) product per primer pair and strand, which hid true products behind spurious Mb-long ones.
 7. **05 multiplex**: the top 6 passing genes per strain, and all 6⁷ = 279,936 combinations.
+   - Pool: a strain's pool is drawn only from genes that are strain-unique by homology whenever it has a passing assay on one. Core genes are a fallback.
    - Objective: best worst-case heterodimer ΔG *between sets*, then best 3′-anchored ΔG, then smallest Tm spread. Within-set dimers were already constrained by primer3.
    - Checks: exhaustive in-silico PCR of the pooled primers, and each probe needs ≥ 5 mismatches to every other amplicon.
    - It also proposes a 4 + 3 well split. The step stops with an error if any strain has no passing set.
@@ -117,9 +149,80 @@ In-silico verification (`results/verification.txt`):
    - Writes `amplicons.fasta` (± 20 bp, as gBlock standards), `oligos.tsv` and the dimer heatmap.
 9. **07 figures**: `07_figures.py` draws Figures 1–4 (see [Figures](#figures)).
 
+## Add-on: low-dimer 7-plex (`primer_design/strict/`)
+
+The standard selection (step 05) only minimises dimers between different assays, and it only searches the 6 best-ranked genes per strain. Its strongest dimers are therefore self-dimers and pairs inside one assay, which reach −7.6 kcal/mol. The add-on is an alternative selection that minimises the strongest dimer of any kind. It does not replace or modify the standard scripts, results or figures.
+
+- **Run:** `bash primer_design/run_strict_addon.sh` (about 2 min on one core; needs steps 00–04).
+- **Script:** `scripts/08_strict_dimer_addon.py`. Steps 06 and 07 are reused unmodified through symlinks in `strict/scripts/`.
+- **Outputs:** `strict/results/` (same files as `results/`, plus `candidates_pool_wide.tsv`) and `strict/figures/` (Figures 2–4 for this set).
+
+How it differs from step 05:
+- **Pool:** up to 40 strain-unique genes per strain (13–39 available), not 6. For each gene it keeps the assay with the weakest within-assay dimer.
+- **Objective:** the 7-plex whose worst oligo pair is as weak as possible, counting self-dimers, pairs within an assay and pairs between assays. The search is exact (binary search on the ΔG threshold, with backtracking), and ties go to better-ranked assays.
+- **Checks:** the same pooled in-silico PCR, probe cross-talk test, knock-out test and enzyme check.
+
+| | Standard set | Low-dimer add-on |
+|---|---|---|
+| Worst oligo pair of any kind | −7.64 kcal/mol (AA7 forward primer self-dimer) | −4.85 kcal/mol (AA3 reverse primer × AA5 probe) |
+| Worst pair within an assay | −7.64 kcal/mol | −4.74 kcal/mol |
+| Worst pair between assays | −5.64 kcal/mol | −4.85 kcal/mol |
+| Highest dimer melting temperature | 26.9 °C | 19.1 °C |
+| Primer Tm range | 59.8–60.7 °C | 59.4–61.1 °C |
+| Targets with a gene name | 4 of 7 | 2 of 7 |
+| Targets mid-replichore (`rel_ori` 0.3–0.7) | 7 of 7 | 6 of 7 (AA3 at 0.23) |
+| 3-mismatch background primer sites per assay | 1–12 | 1–9 |
+| Pooled in-silico PCR and knock-out test | pass | pass |
+| Enzymes cutting no amplicon | PvuII, XbaI | PvuII, XbaI, HindIII, BamHI, BsaI, AluI, CviQI |
+
+Trade-offs of the add-on set:
+- Five of its seven targets are hypothetical or unnamed proteins.
+- The AA3 target is closer to the origin than the others (`rel_ori` 0.23), so in fast-growing cells AA3 could be slightly over-counted relative to the other strains. AA3 has only 13 usable genes, 6 of them mid-replichore.
+- ΔG values are predictions (primer3, 37 °C, 800 nM). At 60 °C none of these dimers is stable in either set, so the gain matters mostly during reaction setup and for no-template background.
+
+| Strain | Target locus | Product | rel_ori | Amplicon | Well (4+3) |
+|---|---|---|---|---|---|
+| AA1 | BTU49_RS15115 | hypothetical protein | 0.39 | 90 bp | W2 |
+| AA2 | BUE85_RS13820 | hypothetical protein | 0.43 | 145 bp | W1 |
+| AA3 | BUE88_RS13670 | DUF4338 domain-containing protein | 0.23 | 145 bp | W1 |
+| AA4 | BUE86_RS23305 *seqA* | replication initiation negative regulator SeqA | 0.55 | 125 bp | W1 |
+| AA5 | BUE84_RS01130 *bshC* | bacillithiol biosynthesis enzyme BshC | 0.56 | 107 bp | W2 |
+| AA6 | BUQ72_RS24670 | hypothetical protein | 0.58 | 112 bp | W1 |
+| AA7 | BUQ73_RS05825 | hypothetical protein | 0.52 | 95 bp | W2 |
+
+Oligos of the add-on set (5′→3′; also in `primer_design/strict/results/oligos.tsv`):
+
+| Name | Strain | Type | Sequence (5′→3′) | nt | Tm °C | GC % |
+|---|---|---|---|---|---|---|
+| AA1_BTU49_RS15115_F | AA1 | F | `AAGTTCCAGAAGTTGATGAC` | 20 | 59.4 | 40.0 |
+| AA1_BTU49_RS15115_R | AA1 | R | `CGAGACTGAGTTTGATGTTG` | 20 | 60.4 | 45.0 |
+| AA1_BTU49_RS15115_P | AA1 | probe | `CTTCAGGTTCAACGCCGACACC` | 22 | 69.1 | 59.1 |
+| AA2_BUE85_RS13820_F | AA2 | F | `CATATCCGACTTTTCATCCG` | 20 | 60.1 | 45.0 |
+| AA2_BUE85_RS13820_R | AA2 | R | `ATTCGCCTTCAACAAATCAT` | 20 | 60.1 | 35.0 |
+| AA2_BUE85_RS13820_P | AA2 | probe | `CCATTATCTTCACCCGCCAACAGA` | 24 | 67.9 | 50.0 |
+| AA3_BUE88_RS13670_F | AA3 | F | `GTAAATGTCTTCTCGTTGCG` | 20 | 61.1 | 45.0 |
+| AA3_BUE88_RS13670_R | AA3 | R | `CAGTCCAATTGTGCAGATC` | 19 | 60.4 | 47.4 |
+| AA3_BUE88_RS13670_P | AA3 | probe | `TGTGCTCCAACCGATCCAATTGTC` | 24 | 68.5 | 50.0 |
+| AA4_BUE86_RS23305_F | AA4 | F | `TGAGACACGACATCTTTAGT` | 20 | 60.0 | 40.0 |
+| AA4_BUE86_RS23305_R | AA4 | R | `TATCAGTATATTGCCAGCCA` | 20 | 59.9 | 40.0 |
+| AA4_BUE86_RS23305_P | AA4 | probe | `CTTAAAATTTCCGCCGCCTCACAG` | 24 | 67.7 | 50.0 |
+| AA5_BUE84_RS01130_F | AA5 | F | `GGAACGACTTGAAAATCTGT` | 20 | 60.0 | 40.0 |
+| AA5_BUE84_RS01130_R | AA5 | R | `CAAGCCACGAATAACCATAA` | 20 | 59.9 | 40.0 |
+| AA5_BUE84_RS01130_P | AA5 | probe | `ACGCTAAAATTATATACTCTCTCCTGCCA` | 29 | 66.5 | 37.9 |
+| AA6_BUQ72_RS24670_F | AA6 | F | `CATGGTCATATGCCGAATTT` | 20 | 60.3 | 40.0 |
+| AA6_BUQ72_RS24670_R | AA6 | R | `GTTGATTTACATCCCATCCC` | 20 | 59.9 | 45.0 |
+| AA6_BUQ72_RS24670_P | AA6 | probe | `CAGCCAGAAAACACCTCAATCAGC` | 24 | 67.4 | 50.0 |
+| AA7_BUQ73_RS05825_F | AA7 | F | `GTCACATTTCTACGTCAAGG` | 20 | 60.2 | 45.0 |
+| AA7_BUQ73_RS05825_R | AA7 | R | `CTTGATCCGTTTGAATGTCA` | 20 | 60.1 | 40.0 |
+| AA7_BUQ73_RS05825_P | AA7 | probe | `CATCCACGACACCAGAATGCTACG` | 24 | 68.5 | 54.2 |
+
+Figure 4 for this set (`strict/figures/fig4_multiplex_compatibility.png`). Panel B compares the chosen set with the combinations of a reduced pool of 6 genes per strain, not with the full wide pool:
+
+![Figure 4, add-on set](primer_design/strict/figures/fig4_multiplex_compatibility.png)
+
 ## R version (teaching copy)
 
-`primer_design/R/` holds an R / tidyverse translation of the whole pipeline (steps 00–07), with its own conda env (`dpcr-design-r`), LSF submit script, results and figures. It selects the same 7 assays and gives the same verification results as the Python version. See `primer_design/R/README.md`.
+`primer_design/R/` holds an R / tidyverse translation of the whole pipeline (steps 00–07), with its own conda env (`dpcr-design-r`), LSF submit script, results and figures. It selects the same 7 assays and gives the same verification results as the standard Python version. The low-dimer add-on exists in Python only. See `primer_design/R/README.md`.
 
 ## Figures
 
@@ -137,8 +240,8 @@ The figures are in `primer_design/figures/` as PNG (300 dpi) and PDF. `primer_de
   - **C, DNA uniqueness.** The fraction of each primary chromosome made of 18-mers that occur once in the whole 7-genome set (65–92 %).
 - **Eligible genes:** routes A and B together give 6,939 genes. These are chromosomal, not pseudogenes, at least 300 bp long, and more than 5 kb from any mobile-element gene.
 - **Sequence-aware filter:** route C (dashed arrow) is applied here. It keeps 5,087 genes on the dnaA-bearing chromosome that have at least 150 bp of contiguous unique DNA and a single BLAST hit in their own genome.
-- **Design:** primer3 designed 1,076 primer + probe assays on 552 genes (40 core and 40 strain-unique genes per strain; amplicons 70–150 bp).
-- **Specificity:** 710 assays passed the exhaustive in-silico PCR against all replicons (bowtie1, up to 3 mismatches per primer).
+- **Design:** primer3 designed 1,078 primer + probe assays on 552 genes (40 core and 40 strain-unique genes per strain; amplicons 70–150 bp).
+- **Specificity:** 716 assays passed the exhaustive in-silico PCR against all replicons (bowtie1, up to 3 mismatches per primer).
 - **Multiplex selection:** the best 6 genes per strain (42 assays) gave 279,936 seven-way combinations, each scored on oligo heterodimer ΔG.
 - **Final set** (orange box): the selected 7-plex.
 
@@ -162,7 +265,7 @@ The figures are in `primer_design/figures/` as PNG (300 dpi) and PDF. `primer_de
   - A blue cell means the assay's primer pair gives a product in that genome; the number is the product length. Each assay gives exactly one product, in its own genome, with perfectly matching primers.
   - A grey cell means no product. Its number is the smallest number of mismatches of any binding site of that assay's forward or reverse primer in that genome, from an exhaustive search of sites with up to 3 mismatches. "≥4" means no site with 3 or fewer mismatches exists.
   - No pair of such sites lies within 3 kb in the right orientation, so no off-target product is predicted.
-  - The single "2" is an isolated site of the AA1 forward primer (18 nt) in the AA7 genome. Its mismatches are at positions 13 and 15, so one of them is in the last five 3′ bases. No partner primer site lies nearby, so it cannot form a product.
+  - No primer has an off-target site with fewer than 3 mismatches in any genome.
 - **(B) Knock-out test with the 14 pooled primers.** Rows are the genome whose target amplicon was masked, and columns are assays. Blue means the product is still formed. A hatched orange cell ("lost") means it is no longer formed. Only the masked target is lost in each row, so no assay has a hidden alternative priming site and no assay depends on another strain's genome.
 
 ### Figure 4. Compatibility of the assays in a multiplex
@@ -172,9 +275,9 @@ The figures are in `primer_design/figures/` as PNG (300 dpi) and PDF. `primer_de
 **Figure 4. Predicted interactions between the oligos of the final 7-plex.**
 - **(A) Heterodimer ΔG for every pair of the 21 oligos** (F = forward primer, R = reverse primer, P = probe). Values come from primer3 at 37 °C, 50 mM monovalent cations, 3.8 mM Mg²⁺, 0.8 mM dNTPs and 800 nM oligo.
   - Darker blue means a more stable, less desirable dimer. The scale is clipped at −10 kcal/mol.
-  - Oligos are ordered by the proposed two-well split. The thick black lines separate well W1 (AA2, AA3, AA4, AA5) from well W2 (AA1, AA6, AA7).
+  - Oligos are ordered by the proposed two-well split. The thick black lines separate well W1 (AA1, AA2, AA4, AA6) from well W2 (AA3, AA5, AA7).
   - Dotted squares on the diagonal enclose the oligos of one assay (within-assay pairs). The diagonal cells are self-dimers.
-  - The orange box marks the strongest interaction between two different assays: AA3 forward primer with AA7 probe, −5.6 kcal/mol.
+  - The orange box marks the strongest interaction between two different assays: AA5 reverse primer with AA4 reverse primer, −5.6 kcal/mol.
 - **(B) All 279,936 candidate 7-plexes.** Each is one assay per strain, taken from the 6 best genes per strain. They are binned by their worst (most negative) between-assay heterodimer ΔG, in 0.25 kcal/mol bins. The orange line is the selected combination (−5.64 kcal/mol), which has the weakest worst-case interaction of all the candidates.
 
 ## Review follow-up
@@ -183,7 +286,7 @@ A separate agent reviewed the workflow. These findings were fixed:
 - seqkit's non-exhaustive in-silico PCR, replaced by bowtie1 pairing;
 - walltime;
 - BLAST HSP truncation, since the BLAST step was removed;
-- core-first ranking hid the strain-unique genes, now replaced by a quota;
+- core-first ranking hid the strain-unique genes, now replaced by a quota, with strain-uniqueness by homology as the first criterion;
 - AA2 secondary replicons, now dnaA chromosome only;
 - the within-set diagonal distorted the multiplex objective;
 - a 6-plex could be written silently;
@@ -196,7 +299,7 @@ A separate agent reviewed the workflow. These findings were fixed:
 Still open:
 - **No host or contaminant screen.** The 14 primers have not been screened against *Zea mays* (nuclear, chloroplast, mitochondrial) or common reagent contaminants. Do this if the assays will be used on root DNA.
 - **Cached files are not tied to their parameters.** `allvsall.m8`, `k18_repeated.txt` and the BLAST/bowtie indexes are reused whenever they exist. After changing `EVALUE`, `MIN_COV` or `K`, delete `primer_design/work/`.
-- **AA4 target may sit in an unstable region.** BUE86_RS06915 is an "ATP-dependent endonuclease" (an OLD-family gene; these often sit in defence islands). It is not near an annotated mobile element, but if you want a housekeeping target instead, take the next AA4 set from `results/candidates_pool.tsv`.
+- **Targets are accessory genes.** All seven targets are strain-unique genes, and three (AA1, AA3, AA6) have no known function. Check that each amplifies from the lab's own stock of the strain. Backups are in `results/candidates_pool.tsv`.
 - **Dye and amplitude plan.** Assign dyes once the platform is chosen. For a 7-in-1 well, amplitude multiplexing needs different probe concentrations per assay, tuned experimentally.
 
 ## Still to do
@@ -205,4 +308,4 @@ Still open:
   - efficiency of each assay alone, and alone vs multiplexed, on the gDNA of each pure strain;
   - a cross-reactivity matrix (each strain's DNA against all 7 assays);
   - calibration against gBlock standards (`results/amplicons.fasta`).
-- Digest the gDNA before partitioning with one of the compatible enzymes listed above.
+- Digest the gDNA before partitioning with PvuII (or XbaI).
